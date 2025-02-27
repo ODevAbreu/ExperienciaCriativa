@@ -1,1 +1,1 @@
-Software desenvolvido com o objetivo de implementar um sistema de delivery de café , promovento uma alta diversidade de formas de manipulação do café como expresso, late , latemachiato , fraputino ,etc , mas , tambem proporcionando grãos e po de café.
+Software desenvolvido com o objetivo de implementar um sistema de delivery de café , promovento uma alta diversidade de formas de manipulação do café como expresso, late , latemachiato , fraputino ,etc , mas , tambem proporcionando grãos e po de café
