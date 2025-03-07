@@ -1,0 +1,25 @@
+.catalogo{
+    width: 100%;
+   display: flex;
+   
+}
+.filtros{
+    width: 30%;
+    background-color: #daedfe;
+
+}
+
+.card-deck{
+    width: 100%;
+    display: flex;
+    justify-content:start;
+    align-items: start;
+    gap: 5%;
+    padding-left: 5%;
+    padding-right:1.5%;
+    flex-wrap: wrap;
+    
+}
+.card{
+    margin: 10px;
+}
