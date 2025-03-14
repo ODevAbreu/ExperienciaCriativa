@@ -5,32 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/bs-brain@2.0.4/components/registrations/registration-12/assets/css/registration-12.css">
 </head>
-<body class="d-flex vh-100 align-items-center justify-content-center">
+<body>
+<!-- Login - Componente Bootstrap Brain -->
+<section class="py-3 py-md-5 py-xl-8">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header text-center bg-primary text-white">
-                        <h3>Login</h3>
-                    </div>
-                    <div class="card-body">
-                        <form>
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="senha" class="form-label">Senha</label>
-                                <input type="password" class="form-control" id="senha" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Entrar</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+      <div class="row">
+        <div class="col-12">
+          <div class="mb-5">
+            <h2 class="display-5 fw-bold text-center">Entrar</h2>
+          </div>
         </div>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+          <div class="row gy-5 justify-content-center">
+            <div class="col-12 col-lg-5">
+              <form action="#!">
+                <div class="row gy-3 overflow-hidden">
+                  <!-- Email -->
+                  <div class="col-12">
+                    <div class="form-floating mb-3">
+                      <input type="email" class="form-control border-0 border-bottom rounded-0" name="email" id="email" placeholder="nome@exemplo.com" required>
+                      <label for="email" class="form-label">E-mail</label>
+                    </div>
+                  </div>
+
+                  <!-- Senha -->
+                  <div class="col-12">
+                    <div class="form-floating mb-3">
+                      <input type="password" class="form-control border-0 border-bottom rounded-0" name="password" id="password" placeholder="Senha" required>
+                      <label for="password" class="form-label">Senha</label>
+                    </div>
+                  </div>
+
+                  <!-- Botão de login -->
+                  <div class="col-12">
+                    <div class="d-grid">
+                      <button class="btn btn-lg btn-dark rounded-0 fs-6" type="submit">Entrar</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</section>
+
+<p class="text-center m-0">Não tem uma conta? <a href="cadastro.html" class="link-primary text-decoration-none">Cadastrar</a></p>
+
 </body>
 </html>
