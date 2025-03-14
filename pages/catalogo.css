@@ -3,12 +3,23 @@
    display: flex;
    
 }
-.filtros{
+aside{
     width: 30%;
-    background-color: #daedfe;
+    background-color: var(--secondary-color);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    color: var(--light-color);
 
 }
-
+aside input{
+    background-color: var(--light-color);
+}
+.form-control:focus{
+    box-shadow: 0 0 6px var(--primary-color);
+    border-color: var(--primary-color)
+}
 .card-deck{
     width: 100%;
     display: flex;
@@ -18,8 +29,17 @@
     padding-left: 5%;
     padding-right:1.5%;
     flex-wrap: wrap;
-    
+   
 }
 .card{
     margin: 10px;
+    color: var(--light-color);
+    background-color: var(--secondary-color);   
+}
+.btn{
+    background-color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+.navbar{
+    position:relative;
 }
