@@ -7,20 +7,18 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/bs-brain@2.0.4/components/registrations/registration-12/assets/css/registration-12.css">
     <style>
-      /* Mantém o placeholder visível, mesmo quando o campo é focado */
-      .form-floating > input::placeholder {
-          opacity: 1;
-          color: #6c757d; /* Cor do texto do placeholder */
-      }
+        .form-floating > input::placeholder {
+            opacity: 1;
+            color: #6c757d; /* Cor do texto do placeholder */
+        }
 
-      /* Para que o label não sobreponha o placeholder ao digitar */
-      .form-floating > input:focus::placeholder {
-          color: #6c757d;
-      }
+        .form-floating > input:focus::placeholder {
+            color: #6c757d;
+        }
     </style>
 </head>
 <body> 
-<!-- Registro 12 - Componente Bootstrap Brain -->
+
 <section class="py-3 py-md-5 py-xl-8">
     <div class="container">
       <div class="row">
@@ -44,13 +42,13 @@
                   </div>
                   <div class="col-12">
                     <div class="form-floating mb-3">
-                      <input type="tel" class="form-control border-0 border-bottom rounded-0" name="phone" id="phone" placeholder="(xx) xxxx-xxxx" pattern="^\(\d{2}\)\s?\d{5}-\d{4}$" required>
+                      <input type="tel" class="form-control border-0 border-bottom rounded-0" name="phone" id="phone" maxlength="15" placeholder="(xx) xxxx-xxxx" required>
                       <label for="phone" class="form-label">Telefone</label>
                     </div>                   
                   </div>
                   <div class="col-12">
                     <div class="form-floating mb-3">
-                      <input type="email" class="form-control border-0 border-bottom rounded-0" name="email" id="email" placeholder="nome@exemplo.com" required>
+                      <input type="email" class="form-control border-0 border-bottom rounded-0" name="email" id="email" placeholder="rogerioabreu@gmail.com" required>
                       <label for="email" class="form-label">E-mail</label>
                     </div>
                   </div>
@@ -62,7 +60,7 @@
                   </div>
                   <div class="col-12">
                     <div class="form-floating mb-3">
-                      <input type="text" class="form-control border-0 border-bottom rounded-0" name="cpf" id="cpf" placeholder="XXX.XXX.XXX-XX" pattern="^\d{3}\.\d{3}\.\d{3}-\d{2}$" required>
+                      <input type="text" class="form-control border-0 border-bottom rounded-0" name="cpf" id="cpf" maxlength="14" placeholder="XXX.XXX.XXX-XX" required>
                       <label for="cpf" class="form-label">CPF</label>
                     </div>
                   </div>
@@ -92,22 +90,35 @@
 
 <script>
   
-  document.getElementById('phone').addEventListener('input', function (e) {
+  
+  document.getElementById('phone').addEventListener('blur', function (e) {
     var phone = e.target.value;
-    phone = phone.replace(/\D/g, ''); 
-    phone = phone.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3'); 
+    phone = phone.replace(/\D/g, '');
+    if (phone.length <= 2) {
+      phone = '(' + phone;
+    } else if (phone.length <= 7) {
+      phone = '(' + phone.slice(0, 2) + ') ' + phone.slice(2);
+    } else {
+      phone = '(' + phone.slice(0, 2) + ') ' + phone.slice(2, 7) + '-' + phone.slice(7, 11);
+    }
     e.target.value = phone;
   });
-  </script>
 
-<script>
-  document.getElementById('cpf').addEventListener('input', function (e) {
+  document.getElementById('cpf').addEventListener('blur', function (e) {
     var cpf = e.target.value;
-    cpf = cpf.replace(/\D/g, ''); 
-    cpf = cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4'); 
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length <= 3) {
+      cpf = cpf;
+    } else if (cpf.length <= 6) {
+      cpf = cpf.slice(0, 3) + '.' + cpf.slice(3);
+    } else if (cpf.length <= 9) {
+      cpf = cpf.slice(0, 6) + '.' + cpf.slice(6);
+    } else {
+      cpf = cpf.slice(0, 9) + '-' + cpf.slice(9, 11);
+    }
     e.target.value = cpf;
   });
-
 </script>
+
 </body>
 </html>
