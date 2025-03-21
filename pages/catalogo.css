@@ -1,9 +1,10 @@
-.catalogo{
+.catalogo {
     width: 100%;
-   display: flex;
-   
+    display: flex;
+
 }
-aside{
+
+#aside {
     width: 30%;
     background-color: var(--secondary-color);
     padding: 15px;
@@ -13,33 +14,81 @@ aside{
     color: var(--light-color);
 
 }
-aside input{
+
+aside input {
     background-color: var(--light-color);
 }
-.form-control:focus{
+
+.form-control:focus {
     box-shadow: 0 0 6px var(--primary-color);
     border-color: var(--primary-color)
 }
-.card-deck{
+
+.card-deck {
     width: 100%;
     display: flex;
-    justify-content:start;
+    justify-content: start;
     align-items: start;
     gap: 5%;
     padding-left: 5%;
-    padding-right:1.5%;
+    padding-right: 1.5%;
     flex-wrap: wrap;
-   
+
 }
-.card{
+
+.card {
     margin: 10px;
     color: var(--light-color);
-    background-color: var(--secondary-color);   
+    background-color: var(--secondary-color);
 }
-.btn{
+
+.btn {
     background-color: var(--primary-color);
     border: 1px solid var(--primary-color);
 }
-.navbar{
-    position:relative;
+.btn:hover,.btn:active{
+    background-color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+}
+
+.navbar {
+    position: relative;
+}
+
+.filtro-mobile {
+    display: none;
+}
+
+@media (max-width: 1240px) {
+    .card-deck {
+        justify-content: space-evenly;
+    }
+}
+
+@media (max-width: 940px) {
+    .filtro-mobile{
+        display: flex;
+        align-items: center;
+        height: 60px;
+        justify-content: center;
+        background-color: var(--secondary-color);
+    }
+    #abrir-filtro{
+        width: 30%;
+    }
+    #aside{
+        display: none;
+        width: 100vw;
+        height: 100vh;
+    }
+    .filtrar{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    #filtrar{
+        width: 100%;
+        top: 0;
+    }
 }

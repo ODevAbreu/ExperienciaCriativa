@@ -28,7 +28,7 @@
           <span></span>
         </button>
         <ul class="nav-links" id="navLinks">
-          <li><a href="#home" class="active">Início</a></li>
+          <li><a href="index.html" class="active">Início</a></li>
           <li><a href="#menu">Menu</a></li>
           <li><a href="#about">Sobre</a></li>
           <li><a href="#contact">Contato</a></li>
@@ -36,8 +36,12 @@
       </div>
     </nav>
 
+    <div class="filtro-mobile">
+      <button onclick="AbrirFiltro()" id="abrir-filtro" class="btn btn-primary">Filtros</button>
+    </div>
+
   <main class="catalogo">
-    <aside>
+    <aside id="aside">
       <div class="form-group">
         <input type="text" class="form-control" id="filtro" aria-describedby="filtro" placeholder="Procurar Produtos">
       </div>
@@ -65,9 +69,9 @@
           <label class="form-check-label" for="flexCheckDefault4">Mocha</label>
         </div>
       </div>
-
-
+      <button id="filtrar" id="abrir-filtro" class="btn btn-primary">Filtrar</button>
     </aside>
+
     <div class="card-deck">
       <div class="card" style="width: 18rem;">
         <img class="card-img-top" src="/img/coffe.jpeg" alt="imagem do produto" width="150">
@@ -149,7 +153,23 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script>
+    let abriu = true
+    function AbrirFiltro(){
 
+      if(abriu){  
+        document.getElementById('aside').style.display = "flex"
+        document.getElementsByClassName('catalogo')[0].style.display = "block"
+        abriu = false
+      }else{
+        document.getElementById('aside').style.display = "none"
+        abriu = true
+      }
+
+    }
+
+
+  </script>
 </body>
 
 </html>
