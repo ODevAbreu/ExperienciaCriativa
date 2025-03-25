@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrinho - Coffee or Nothing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="shop-style.css">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container">
+        <a class="navbar-brand" href="index.html">
+          <img src="../img/Coffee_or_Nothing_logo.png" alt="Coffee or Nothing" class="logo">
+        </a>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="login.html">Entre ou Cadastrar-se</a></li>
+        </ul>
+      </div>
+    </nav>
+    
+    <section class="cart-section py-5">
+      <div class="container mt-5 pt-5">
+        <h1 class="text-center mb-4">Seu Carrinho</h1>
+        <div class="cart-items" id="cartItems">
+          <div class="card mb-3 p-3 shadow-sm">
+            <div class="row g-0 align-items-center">
+              <div class="col-md-2 text-center">
+                <img src="../img/coffe.jpeg" alt="Café Especial" class="img-fluid rounded" style="max-width: 80px;">
+              </div>
+              <div class="col-md-6">
+                <h5 class="card-title">Café Especial - 250g</h5>
+                <p class="card-text text-muted">Grãos selecionados de alta qualidade</p>
+              </div>
+              <div class="col-md-2 text-center">
+                <button class="btn btn-outline-secondary btn-sm">-</button>
+                <span class="mx-2">1</span>
+                <button class="btn btn-outline-secondary btn-sm">+</button>
+              </div>
+              <div class="col-md-2 text-end">
+                <p class="fw-bold">R$ 29,90</p>
+                <button class="btn btn-danger btn-sm">Remover</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cart-summary p-4 border rounded mt-4 bg-white">
+          <h3 class="mb-3">Endereço de Entrega</h3>
+          <input type="text" id="address" class="form-control mb-3" placeholder="Digite seu endereço">
+          <h3 class="mb-3">Forma de Pagamento</h3>
+          <select id="payment-method" class="form-select mb-3">
+            <option value="credit">Cartão de Crédito</option>
+            <option value="debit">Cartão de Débito</option>
+            <option value="pix">PIX</option>
+            <option value="boleto">Boleto Bancário</option>
+          </select>
+          <div class="cart-total d-flex justify-content-between align-items-center p-3 border rounded bg-light">
+            <span class="fw-bold">Total:</span>
+            <span id="cartTotal" class="fw-bold">R$ 29,90</span>
+          </div>
+          <button class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">Finalizar Compra</button>
+        </div>
+      </div>
+    </section>
+    
+    <footer>
+        <div class="container">
+          <div class="footer-content">
+            <div class="footer-brand">
+              <h3>Coffee or Nothing</h3>
+              <p>O melhor café para o seu dia</p>
+            </div>
+            <div class="footer-links">
+              <h4>Links Rápidos</h4>
+              <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="shop.html">Loja</a></li>
+                <li><a href="#cart">Carrinho</a></li>
+              </ul>
+            </div>
+            <div class="footer-hours">
+              <h4>Horário de Funcionamento</h4>
+              <p>Segunda a Sexta: 7h às 20h</p>
+              <p>Sábados e Domingos: 8h às 19h</p>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <p>&copy; 2025 Coffee or Nothing. Todos os direitos reservados.</p>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+    <script type="module" src="/pages/shop.js"></script>
+  </body>
+  </html>
