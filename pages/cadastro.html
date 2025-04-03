@@ -201,8 +201,11 @@ document.getElementById('btnCadastrar').addEventListener('click', function (even
   event.preventDefault(); // Previne o envio do formulário
 
   const cpfInput = document.getElementById('cpf');
+  const senhaInput = document.getElementById('senha');
   const cpf = cpfInput.value.replace(/\D+/g, ""); // Remove a máscara do CPF
+  const senha = senhaInput.value;
 
+  // Validação do CPF
   if (!validarCPF(cpf)) {
     Swal.fire({
       icon: 'error',
@@ -214,7 +217,20 @@ document.getElementById('btnCadastrar').addEventListener('click', function (even
     return;
   }
 
-  // Se o CPF for válido, exibe mensagem de sucesso
+  // Validação da senha
+  const senhaRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/; // Pelo menos uma letra maiúscula, um número e 8 caracteres
+  if (!senhaRegex.test(senha)) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Senha inválida!',
+      text: 'A senha deve conter pelo menos 8 caracteres, incluindo uma letra maiúscula e um número.',
+      confirmButtonColor: '#744321'
+    });
+    senhaInput.focus(); // Foca no campo de senha
+    return;
+  }
+
+  // Se CPF e senha forem válidos, exibe mensagem de sucesso
   Swal.fire({
     icon: 'success',
     title: 'Cadastro realizado!',
