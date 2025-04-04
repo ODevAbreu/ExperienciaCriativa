@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8" />
+    <title>Clínica Médica ABC - Exclusão de Médicos</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', path='imagens/favicon.png') }}"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
+    <link rel="stylesheet" href="/static/css/customize.css" />
+</head>
+<body onload="w3_show_nav('menuMedico')">
+
+  {% include 'geral/menu.html' %}
+
+  <div class="w3-main w3-container" style="margin-left:270px;margin-top:130px;">
+
+    <div class="w3-panel w3-padding-large w3-card-4 w3-light-grey">
+      <div class="w3-code cssHigh notranslate">
+
+        <p class="w3-small">Acesso em: {{ hoje }}</p>
+        <div class="w3-container w3-theme">
+          <h2>Exclusão de Médico</h2>
+        </div>
+
+        <form class="w3-container" action="/medExcluir_exe" method="post">
+          <!-- Campo oculto com o ID do médico para exclusão -->
+          <input type="hidden" name="id" value="{{ med.ID_Medico }}">
+          <table class="w3-table-all">
+            <tr>
+              <td style="width:50%;">
+                <p>
+                  <label class="w3-text-IE"><b>Nome: </b></label>
+                  {{ med.Nome }}
+                </p>
+                <p>
+                  <label class="w3-text-IE"><b>CRM: </b></label>
+                  {{ med.CRM }}
+                </p>
+                <p>
+                  <label class="w3-text-IE"><b>Data de Nascimento: </b></label>
+                  {{ data_formatada }}
+                </p>
+                <p>
+                  <label class="w3-text-IE"><b>Especialidade: </b></label>
+                  {{ med.Nome_Espec }}
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align:center;">
+                <p class="w3-text-IE"><b>Deseja realmente excluir este médico?</b></p>
+                <p>
+                  <input type="submit" value="Confirmar exclusão?" class="w3-button w3-red w3-padding">
+                  <input type="button" value="Cancelar" class="w3-btn w3-theme" onclick="window.location.href='/medListar'">
+                </p>
+              </td>
+            </tr>
+          </table>
+        </form>
+
+      </div>
+    </div>
+    {% include 'geral/sobre.html' %}
+  </div>
+  {% include 'geral/rodape.html' %}
+
+</body>
+</html>
