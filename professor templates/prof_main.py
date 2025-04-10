@@ -124,7 +124,11 @@ async def listar_medicos(request: Request, db=Depends(get_db)):
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
         # Consulta SQL unindo Medico e Especialidade, ordenando por nome
         sql = """
-            SELECT p.ID_Produto, p.Nome_Produto FROM produto p
+            SELECT M.ID_Medico, M.CRM, M.Nome, E.Nome_Espec AS Especialidade,
+                   M.Foto, M.Dt_Nasc
+            FROM Medico AS M 
+            JOIN Especialidade AS E ON M.ID_Espec = E.ID_Espec
+            ORDER BY M.Nome
         """
         cursor.execute(sql)
         medicos = cursor.fetchall()  # lista de dicts com dados dos médicos
