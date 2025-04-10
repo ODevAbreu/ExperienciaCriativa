@@ -25,7 +25,7 @@ DB_CONFIG = {
     "host": "localhost",
     "user": "root",
     "password": "PUC@1234",
-    "database": "clinicaa"
+    "database": "coffe"
 }
 
 
@@ -116,10 +116,10 @@ async def cadastrar_usuario(
     finally:
         db.close()
 
-@app.get("/medListar", name="medListar", response_class=HTMLResponse)
+@app.get("/catalogo.html", name="medListar", response_class=HTMLResponse)
 async def listar_medicos(request: Request, db=Depends(get_db)):
-    if not request.session.get("user_logged_in"):
-        return RedirectResponse(url="/", status_code=303)
+    # if not request.session.get("user_logged_in"):
+    #     return RedirectResponse(url="/", status_code=303)
 
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
         # Consulta SQL unindo Medico e Especialidade, ordenando por nome
@@ -127,38 +127,23 @@ async def listar_medicos(request: Request, db=Depends(get_db)):
             SELECT p.ID_Produto, p.Nome_Produto FROM produto p
         """
         cursor.execute(sql)
-        medicos = cursor.fetchall()  # lista de dicts com dados dos médicos
+        produtos = cursor.fetchall()  # lista de dicts com dados dos médicos
 
     # Processa os dados (calcula idade e converte foto para base64 se necessário)
     hoje = date.today()
-    for med in medicos:
-        # Calcula idade baseado em Dt_Nasc (formato date/datetime do MySQL)
-        dt_nasc = med["Dt_Nasc"]
-        if isinstance(dt_nasc, str):
-            # Se vier como string "YYYY-MM-DD", converte para date
-            ano, mes, dia = map(int, dt_nasc.split("-"))
-            dt_nasc = date(ano, mes, dia)
-        idade = hoje.year - dt_nasc.year
-        # Ajusta se aniversário ainda não ocorreu no ano corrente
-        if (dt_nasc.month, dt_nasc.day) > (hoje.month, hoje.day):
-            idade -= 1
-        med["idade"] = idade
+    for prod in produtos:
+        Nome_Produto = prod["Nome_Produto"]
 
-        # Converter foto blob para base64 (se houver)
-        if med["Foto"]:
-            med["Foto_base64"] = base64.b64encode(med["Foto"]).decode('utf-8')
-        else:
-            med["Foto_base64"] = None
 
-    nome_usuario = request.session.get("nome_usuario", None)
+    # nome_usuario = request.session.get("nome_usuario", None)
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     # Renderiza o template 'medListar.html' com os dados dos médicos
-    return templates.TemplateResponse("medListar.html", {
+    return templates.TemplateResponse("catalogo.html", {
         "request": request,
-        "medicos": medicos,
+        "produtos": produtos,
         "hoje": agora,
-        "nome_usuario": nome_usuario
+        # "nome_usuario": nome_usuario
     })
 
 @app.get("/medIncluir", response_class=HTMLResponse)
