@@ -49,6 +49,19 @@ async def index(request: Request):
         "nome_usuario": nome_usuario
     })
 
+
+@app.get("/paginaLogin")
+async def login(
+    request: Request
+):
+    print("chamou................ @app.get(/login)")
+    #return RedirectResponse(url="/login.html", status_code=303)
+    # Renderiza o template 'medListar.html' com os dados dos médicos
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+    })
+
+
 @app.post("/login")
 async def login(
     request: Request,
@@ -56,6 +69,7 @@ async def login(
     Senha: str = Form(...),
     db = Depends(get_db)
 ):
+    print("chamou................ @app.get(/login)")
     try:
         with db.cursor() as cursor:
 
