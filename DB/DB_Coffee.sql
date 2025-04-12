@@ -1,4 +1,7 @@
 /* Lógico_1: */
+DROP DATABASE IF EXISTS coffee;
+CREATE DATABASE coffee;
+USE coffee;
 
 CREATE TABLE Usuario (
     Id int PRIMARY KEY,
