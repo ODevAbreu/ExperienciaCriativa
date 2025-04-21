@@ -24,9 +24,11 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
-    "database": "coffe"
+    "password": "",
+    "database": "coffee"
 }
+
+
 
 
 # Função para obter conexão com MySQL
@@ -60,6 +62,27 @@ async def login(
     return templates.TemplateResponse("login.html", {
         "request": request,
     })
+    
+@app.get("/cadastro")
+async def cadastro(
+    request: Request
+):
+    print("chamou................ @app.get(/cadastro)")
+    #return RedirectResponse(url="/login.html", status_code=303)
+    # Renderiza o template 'medListar.html' com os dados dos médicos
+    return templates.TemplateResponse("cadastro.html", {
+        "request": request,
+    })
+
+@app.get("/incluirproduto")
+async def incluirproduto(
+    request: Request
+):
+    #return RedirectResponse(url="/login.html", status_code=303)
+    # Renderiza o template 'medListar.html' com os dados dos médicos
+    return templates.TemplateResponse("prodIncluir.html", {
+        "request": request,
+    })
 
 
 @app.post("/login")
@@ -69,7 +92,7 @@ async def login(
     Senha: str = Form(...),
     db = Depends(get_db)
 ):
-    print("chamou................ @app.get(/login)")
+    print("chamou................ @app.get(/flogin)")
     try:
         with db.cursor() as cursor:
 
@@ -129,16 +152,47 @@ async def cadastrar_usuario(
 
     finally:
         db.close()
+        
+@app.post("/prodincluir_exe", name="prodincluir_exe")
+async def prodincluir_exe(
+    request: Request,
+    nome: str = Form(...),
+    descr: str = Form(...),
+    tipo: str = Form(...),
+    preco: str = Form(...),
+    qtd: str = Form(...),
+    db = Depends(get_db)
+):
+    print("chamou................ @app.get(/incluir)")
+    try:
+        with db.cursor() as cursor:
+            sql = "INSERT INTO Produto (Nome_Produto, Descr_Produto, Preco_prod, Tipo_prod, Qtn_Produto) VALUES (%s, %s, %s, %s, %s)"
+            cursor.execute(sql, (nome, descr, preco, tipo, qtd))
+            db.commit()
+            return RedirectResponse(url="catalogo", status_code=303)
 
-@app.get("/catalogo.html", name="medListar", response_class=HTMLResponse)
-async def listar_medicos(request: Request, db=Depends(get_db)):
+    except Exception as e:
+        return RedirectResponse(url="catalogo", status_code=303)
+
+    finally:
+        db.close()
+
+@app.get("/catalogo", name="catalogo", response_class=HTMLResponse)
+async def listar_prod(request: Request, db=Depends(get_db)):
     # if not request.session.get("user_logged_in"):
     #     return RedirectResponse(url="/", status_code=303)
 
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
         # Consulta SQL unindo Medico e Especialidade, ordenando por nome
         sql = """
-            SELECT p.ID_Produto, p.Nome_Produto FROM produto p
+            SELECT
+                p.ID_Produto,
+                p.Nome_Produto,
+                p.Descr_Produto,
+                p.Preco_prod,
+                p.Tipo_prod,
+                p.Qtn_Produto
+                FROM produto p
         """
         cursor.execute(sql)
         produtos = cursor.fetchall()  # lista de dicts com dados dos médicos
@@ -147,7 +201,11 @@ async def listar_medicos(request: Request, db=Depends(get_db)):
     hoje = date.today()
     for prod in produtos:
         Nome_Produto = prod["Nome_Produto"]
-
+        Descr_Produto = prod["Descr_Produto"]
+        Preco_prod = prod["Preco_prod"] 
+        Tipo_prod = prod["Tipo_prod"]
+        Qtn_Produto = prod["Qtn_Produto"]
+        ID_Produto = prod["ID_Produto"]
 
     # nome_usuario = request.session.get("nome_usuario", None)
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -160,118 +218,33 @@ async def listar_medicos(request: Request, db=Depends(get_db)):
         # "nome_usuario": nome_usuario
     })
 
-@app.get("/medIncluir", response_class=HTMLResponse)
-async def medIncluir(request: Request, db=Depends(get_db)):
-    if not request.session.get("user_logged_in"):
-        return RedirectResponse(url="/", status_code=303)
 
-    # Obter especialidades do banco para o combo
+@app.get("/prodexcluir", response_class=HTMLResponse)
+async def prodexcluir(request: Request, id: int, db=Depends(get_db)):
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
-        cursor.execute("SELECT ID_Espec, Nome_Espec FROM Especialidade")
-        especialidades = cursor.fetchall()
-    db.close()
-
-    # Dados para o template (incluindo data/hora e nome do usuário)
-    nome_usuario = request.session.get("nome_usuario", None)
-    agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    return templates.TemplateResponse("medIncluir.html", {
-        "request": request,
-        "especialidades": especialidades,
-        "hoje": agora,
-        "nome_usuario": nome_usuario
-    })
-
-@app.post("/medIncluir_exe")
-async def medIncluir_exe(
-    request: Request,
-    Nome: str = Form(...),
-    CRM: str = Form(...),
-    Especialidade: str = Form(...),
-    DataNasc: str = Form(None),
-    Imagem: UploadFile = File(None),
-    db=Depends(get_db)
-):
-    if not request.session.get("user_logged_in"):
-        return RedirectResponse(url="/", status_code=303)
-
-    foto_bytes = None
-    if Imagem and Imagem.filename:
-        foto_bytes = await Imagem.read()
-
-    try:
-        with db.cursor() as cursor:
-            sql = """INSERT INTO Medico (Nome, CRM, ID_Espec, Dt_Nasc, Foto)
-                     VALUES (%s, %s, %s, %s, %s)"""
-            cursor.execute(sql, (Nome, CRM, Especialidade, DataNasc, foto_bytes))
-            db.commit()
-
-        request.session["mensagem_header"] = "Inclusão de Novo Médico"
-        request.session["mensagem"] = "Registro cadastrado com sucesso!"
-    except Exception as e:
-        request.session["mensagem_header"] = "Erro ao cadastrar"
-        request.session["mensagem"] = str(e)
-    finally:
-        db.close()
-
-    agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    nome_usuario = request.session.get("nome_usuario", None)
-
-    return templates.TemplateResponse("medIncluir_exe.html", {
-        "request": request,
-        "mensagem_header": request.session.get("mensagem_header", ""),
-        "mensagem": request.session.get("mensagem", ""),
-        "hoje": agora,
-        "nome_usuario": nome_usuario
-    })
-
-@app.get("/medExcluir", response_class=HTMLResponse)
-async def med_excluir(request: Request, id: int, db=Depends(get_db)):
-
-    if not request.session.get("user_logged_in"):
-        return RedirectResponse(url="/", status_code=303)
-
-    with db.cursor(pymysql.cursors.DictCursor) as cursor:
-        sql = ("SELECT M.ID_Medico, M.Nome, M.CRM, M.Dt_Nasc, E.Nome_Espec "
-               "FROM Medico M JOIN Especialidade E ON M.ID_Espec = E.ID_Espec "
-               "WHERE M.ID_Medico = %s")
+        sql = ("SELECT * FROM Produto p WHERE p.ID_Produto = %s")
         cursor.execute(sql, (id,))
-        medico = cursor.fetchone()
+        produto = cursor.fetchone()
     db.close()
 
-    # Formatar data (YYYY-MM-DD para dd/mm/aaaa)
-    data_nasc = medico["Dt_Nasc"]
-    if isinstance(data_nasc, str):
-        ano, mes, dia = data_nasc.split("-")
-    else:
-        ano, mes, dia = data_nasc.year, f"{data_nasc.month:02d}", f"{data_nasc.day:02d}"
-    data_formatada = f"{dia}/{mes}/{ano}"
 
-    hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
-    nome_usuario = request.session.get("nome_usuario", None)
-
-    return templates.TemplateResponse("medExcluir.html", {
+    return templates.TemplateResponse("prodexcluir.html", {
         "request": request,
-        "med": medico,
-        "data_formatada": data_formatada,
-        "hoje": hoje,
-        "nome_usuario": nome_usuario
+        "prod": produto
     })
 
-@app.post("/medExcluir_exe")
-async def med_excluir_exe(request: Request, id: int = Form(...), db=Depends(get_db)):
-
-    if not request.session.get("user_logged_in"):
-        return RedirectResponse(url="/", status_code=303)
+@app.post("/prodexcluir_exe")
+async def prodexcluir_exe(request: Request, id: int = Form(...), db=Depends(get_db)):
 
     try:
         with db.cursor(pymysql.cursors.DictCursor) as cursor:
 
-            sql_delete = "DELETE FROM Medico WHERE ID_Medico = %s"
+            sql_delete = "DELETE FROM Produto WHERE ID_Produto = %s"
             cursor.execute(sql_delete, (id,))
             db.commit()
 
-            request.session["mensagem_header"] = "Exclusão de Médico"
-            request.session["mensagem"] = f"Médico excluído com sucesso."
+            request.session["mensagem_header"] = "Exclusão de Produto"
+            request.session["mensagem"] = f"Produto excluído com sucesso."
 
     except Exception as e:
         request.session["mensagem_header"] = "Erro ao excluir"
@@ -280,68 +253,46 @@ async def med_excluir_exe(request: Request, id: int = Form(...), db=Depends(get_
         db.close()
 
     # Redireciona para a página de resultado da exclusão
-    return templates.TemplateResponse("medExcluir_exe.html", {
+    return templates.TemplateResponse("prodexcluir_exe.html", {
         "request": request,
         "mensagem_header": request.session.get("mensagem_header", ""),
-        "mensagem": request.session.get("mensagem", ""),
-        "hoje": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "nome_usuario": request.session.get("nome_usuario", None)
+        "mensagem": request.session.get("mensagem", "")
     })
 
-@app.get("/medAtualizar", response_class=HTMLResponse)
-async def med_atualizar(request: Request, id: int, db=Depends(get_db)):
-    if not request.session.get("user_logged_in"):
-        return RedirectResponse(url="/", status_code=303)
+@app.get("/prodatualizar", response_class=HTMLResponse)
+async def prodatualizar(request: Request, id: int, db=Depends(get_db)):
+
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
-        cursor.execute("SELECT * FROM Medico WHERE ID_Medico = %s", (id,))
-        medico = cursor.fetchone()
-        cursor.execute("SELECT ID_Espec, Nome_Espec FROM Especialidade")
-        especialidades = cursor.fetchall()
+        cursor.execute("SELECT * FROM Produto p WHERE p.ID_Produto = %s", (id,))
+        produto = cursor.fetchone()
+
     db.close()
 
-    hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
-
-    return templates.TemplateResponse("medAtualizar.html", {
+    return templates.TemplateResponse("prodatualizar.html", {
         "request": request,
-        "med": medico,
-        "especialidades": especialidades,
-        "hoje": hoje
+        "p": produto,	
     })
 
-@app.post("/medAtualizar_exe")
-async def med_atualizar_exe(
+@app.post("/prodatualizar_exe")
+async def prodatualizar_exe(
     request: Request,
     id: int = Form(...),
-    Nome: str = Form(...),
-    CRM: str = Form(...),
-    Especialidade: str = Form(...),
-    DataNasc: str = Form(None),
-    Imagem: UploadFile = File(None),
+    nome: str = Form(...),
+    descr: str = Form(...),
+    tipo: str = Form(...),
+    preco: str = Form(...),
+    qtd: str = Form(...),
     db=Depends(get_db)
 ):
-    if not request.session.get("user_logged_in"):
-        return RedirectResponse(url="/", status_code=303)
-
-    foto_bytes = None
-    if Imagem and Imagem.filename:
-        foto_bytes = await Imagem.read()
-
+    # if not request.session.get("user_logged_in"):
+    #     return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor() as cursor:
-            if foto_bytes:
-                sql = """UPDATE Medico 
-                         SET Nome=%s, CRM=%s, Dt_Nasc=%s, ID_Espec=%s, Foto=%s
-                         WHERE ID_Medico=%s"""
-                cursor.execute(sql, (Nome, CRM, DataNasc, Especialidade, foto_bytes, id))
-            else:
-                sql = """UPDATE Medico 
-                         SET Nome=%s, CRM=%s, Dt_Nasc=%s, ID_Espec=%s
-                         WHERE ID_Medico=%s"""
-                cursor.execute(sql, (Nome, CRM, DataNasc, Especialidade, id))
+            sql = """UPDATE Produto
+                     SET Nome_Produto=%s, Descr_Produto=%s, Preco_prod=%s, Tipo_prod=%s, Qtn_Produto=%s 
+                     WHERE ID_Produto=%s"""
+            cursor.execute(sql, ( nome, descr, preco, tipo, qtd, id))
             db.commit()
-
-        request.session["mensagem_header"] = "Atualização de Médico"
-        request.session["mensagem"] = "Registro atualizado com sucesso!"
 
     except Exception as e:
         request.session["mensagem_header"] = "Erro ao atualizar"
@@ -349,13 +300,13 @@ async def med_atualizar_exe(
     finally:
         db.close()
 
-    return templates.TemplateResponse("medAtualizar_exe.html", {
-        "request": request,
-        "mensagem_header": request.session.get("mensagem_header", ""),
-        "mensagem": request.session.get("mensagem", ""),
-        "hoje": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "nome_usuario": request.session.get("nome_usuario", None)
-    })
+    return RedirectResponse(url="catalogo", status_code=303)
+
+    # return templates.TemplateResponse("prodatualizar_exe.html", {
+    #     "request": request,
+    #     "mensagem_header": request.session.get("mensagem_header", ""),
+    #     "mensagem": request.session.get("mensagem", ""),
+    # })
 
 @app.post("/reset_session")
 async def reset_session(request: Request):

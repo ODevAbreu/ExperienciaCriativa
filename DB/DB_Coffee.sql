@@ -18,8 +18,11 @@ CREATE TABLE Compra (
 );
 
 CREATE TABLE Produto (
-    ID_Produto INT PRIMARY KEY,
+    ID_Produto INT PRIMARY KEY auto_increment,
     Nome_Produto VARCHAR(50),
+    Descr_Produto VARCHAR(500),
+    Preco_prod FLOAT,
+    Tipo_prod VARCHAR(50),
     Qtn_Produto INT
 );
 

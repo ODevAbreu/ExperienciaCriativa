@@ -11,33 +11,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css"> 
-  <link rel="stylesheet" href="catalogo.css ">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/catalogo.css') }}">
 </head>
+<style>
+  .navbar{
+    position: relative !important;
+  }
+
+</style>
 
 <body>
-  <div id="app">
-    <nav class="navbar">
-      <div class="container">
-        <a class="navbar-brand" href="#">
-          <img src="../img/Coffee_or_Nothing_logo.png" alt="Coffee or Nothing" class="logo">
-        </a>
-        <button class="mobile-menu-btn" id="menuBtn">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <ul class="nav-links" id="navLinks">
-          <li><a href="index.html">Início</a></li>
-          <li><a href="./catalogo.html" class="active">Catalogo</a></li>
-          <li><a href="./login.html">Entre ou Cadastrar-se</a></li>
-        </ul>
-      </div>
-    </nav>
 
-    <div class="filtro-mobile">
-      <button onclick="AbrirFiltro()" id="abrir-filtro" class="btn btn-primary">Filtros</button>
-    </div>
+  {% include 'geral/menu.html' %}
 
   <main class="catalogo">
     <aside id="aside">
@@ -70,49 +55,29 @@
         </div>
       </div>
       <button id="filtrar" id="abrir-filtro" class="btn btn-primary">Filtrar</button>
+      <a href="./incluirproduto" ><button id="filtrar" id="abrir-filtro" class="btn btn-primary">Cadastrar Produto</button></a>
     </aside>
-    {% for prod in produtos %}
     <div class="card-deck">
+    {% for prod in produtos %}
       <div class="card" style="width: 18rem;">
-        <img class="card-img-top" src="/img/coffe.jpeg" alt="imagem do produto" width="150">
+        <img class="card-img-top" src="{{ url_for('static', path='imagens/coffe.jpeg') }}" alt="imagem do produto" width="150">
         <div class="card-body">
           <h5 class="card-title">{{prod.Nome_Produto}}</h5>
-          <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's
-            content.</p>
+          <p class="card-text">{{prod.Descr_Produto}}</p>
           <div class="d-flex justify-content-between align-items-center">
-            <a>R$19.99</a>
-            <a href="./carrinho.html" class="btn btn-primary">Comprar</a>
+            <a>R${{prod.Preco_prod}}</a>
+            <a href="./prodatualizar?id={{prod.ID_Produto}}" class="btn btn-primary">Alterar</a>
+            <a href="./prodexcluir?id={{prod.ID_Produto}}" class="btn btn-primary">Excluir</a>
+            <!-- <a href="./carrinho.html" class="btn btn-primary">Comprar</a> -->
           </div>
         </div>
       </div>
-    </div>
+    
     {% endfor %}
+  </div>
   </main>
-  <footer>
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-brand">
-          <h3>Coffee or Nothing</h3>
-          <p>O melhor café para o seu dia</p>
-        </div>
-        <div class="footer-links">
-          <h4>Links Rápidos</h4>
-          <ul>
-            <li><a href="#home">Início</a></li>
-            <li><a href="./catalogo.html">Catalogo</a></li>
-          </ul>
-        </div>
-        <div class="footer-hours">
-          <h4>Horário de Funcionamento</h4>
-          <p>Segunda a Sexta: 7h às 20h</p>
-          <p>Sábados e Domingos: 8h às 19h</p>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p>&copy; 2025 Coffee or Nothing. Todos os direitos reservados.</p>
-      </div>
-    </div>
-  </footer>
+  
+  {% include 'geral/footer.html' %}
 
   <script src="main.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
