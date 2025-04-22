@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Usuários - Coffee or Nothing{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 100px; padding-bottom: 80px; max-width: 1000px;">
+  <h1 style="
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    color: #3E2723;
+    text-align: center;
+    margin-bottom: 40px;
+  ">
+    Usuários Cadastrados
+  </h1>
+  <body style="background-color: #694940;"> 
+
+  <div class="table-responsive" style="border-radius: 12px; overflow: hidden; box-shadow: 0 0 15px rgba(0,0,0,0.1);">
+    <table class="table" style="background-color: #fff;">
+      <thead style="background-color: #502e24; color: #fff;">
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Data de Nascimento</th>
+          <th>Telefone</th>
+          <th class="text-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for usuario in usuarios %}
+        <tr style="transition: background 0.3s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+          <td>{{ usuario.Id }}</td>
+          <td>{{ usuario.Nome }}</td>
+          <td>{{ usuario.Email }}</td>
+          <td>{{ usuario.Dt_Nasc }}</td>
+          <td>{{ usuario.Telefone }}</td>
+          <td class="text-center">
+            <a href="/editar_usuario/{{ usuario.Id }}" class="btn btn-sm" style="background-color: #795548; color: #fff; margin-right: 6px;">
+              ✏️ Editar
+            </a> 
+            <a href="/deletar_usuario/{{ usuario.Id }}"
+            class="btn btn-sm"
+            style="background-color: #d32f2f; color: #fff;"
+            onclick="return confirm('Tem certeza que deseja deletar este usuário?');">
+            🗑️ Deletar
+         </a>
+         
+            
+            
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

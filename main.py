@@ -2,14 +2,29 @@ import pymysql
 import base64
 
 from mangum import Mangum
-from fastapi import FastAPI, Request, Form, Depends, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Form, Depends, UploadFile, File , HTTPException , status 
+from fastapi.responses import HTMLResponse, RedirectResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import date, datetime
+from typing import Annotated
+from passlib.context import CryptContext
+
 
 app = FastAPI()
+
+
+# Criação do contexto de criptografia
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    """Criptografa a senha usando bcrypt"""
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica se a senha fornecida corresponde à senha criptografada"""
+    return pwd_context.verify(plain_password, hashed_password)
 
 # Configuração de sessão (chave secreta para cookies de sessão)
 app.add_middleware(SessionMiddleware, secret_key="clinica")
@@ -24,7 +39,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -52,7 +67,7 @@ async def index(request: Request):
     })
 
 
-@app.get("/paginaLogin")
+@app.get("/login")
 async def login(
     request: Request
 ):
@@ -84,6 +99,36 @@ async def incluirproduto(
         "request": request,
     })
 
+@app.get("/usuarios", response_class=HTMLResponse)
+async def listar_usuarios(request: Request, db = Depends(get_db)):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM Usuario")
+            columns = [col[0] for col in cursor.description]
+            usuarios = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            return templates.TemplateResponse("listar_usuarios.html", {"request": request, "usuarios": usuarios})
+    except Exception as e:
+        print("Erro ao recuperar usuários:", e)
+        return HTMLResponse(content="Erro ao carregar a lista de usuários.", status_code=500)
+    finally:
+        db.close()
+
+
+
+@app.get("/deletar_usuario/{usuario_id}")
+async def deletar_usuario(usuario_id: int, db=Depends(get_db)):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("DELETE FROM Usuario WHERE ID = %s", (usuario_id,))
+            db.commit()
+        return RedirectResponse(url="/usuarios", status_code=status.HTTP_302_FOUND)
+    except Exception as e:
+        print("Erro ao deletar usuário:", e)
+        return HTMLResponse(content="Erro ao deletar o usuário.", status_code=500)
+    finally:
+        db.close()
+
+
 
 @app.post("/login")
 async def login(
@@ -92,23 +137,30 @@ async def login(
     Senha: str = Form(...),
     db = Depends(get_db)
 ):
-    print("chamou................ @app.get(/flogin)")
+    print("🔐 Tentativa de login...")
+
     try:
         with db.cursor() as cursor:
-
-            cursor.execute("SELECT * FROM Usuario WHERE Login = %s AND Senha = MD5(%s)", (Login, Senha))
+            cursor.execute("SELECT * FROM Usuario WHERE Email = %s", (Login,))
             user = cursor.fetchone()
 
             if user:
-                request.session["user_logged_in"] = True
-                request.session["nome_usuario"] = user[1]
-                return RedirectResponse(url="/medListar", status_code=303)
+                user_id, nome_usuario, email_usuario, senha_hash, *_ = user
+
+                if verify_password(Senha, senha_hash):
+                    request.session["user_logged_in"] = True
+                    request.session["nome_usuario"] = nome_usuario
+                    return RedirectResponse(url="/catalogo", status_code=303)
+                else:
+                    request.session["login_error"] = "Senha inválida."
             else:
-                request.session["login_error"] = "Usuário ou senha inválidos."
-                request.session["show_login_modal"] = True
-                return RedirectResponse(url="/", status_code=303)
+                request.session["login_error"] = "Usuário não encontrado."
+
+            request.session["show_login_modal"] = True
+            return RedirectResponse(url="/", status_code=303)
     finally:
         db.close()
+
 
 @app.get("/logout")
 async def logout(request: Request):
@@ -119,39 +171,100 @@ async def logout(request: Request):
 @app.post("/cadastro", name="cadastro")
 async def cadastrar_usuario(
     request: Request,
-    nome: str = Form(...),
-    Login: str = Form(...),
-    Celular: str = Form(...),
-    Senha1: str = Form(...),
+    nome: Annotated[str, Form(...)],
+    email: Annotated[str, Form(...)],
+    senha: Annotated[str, Form(...)],
+    dt_nasc: Annotated[str, Form(...)],
+    telefone: Annotated[str, Form(...)],
+    cpf: Annotated[str, Form(...)],
     db = Depends(get_db)
 ):
     try:
         with db.cursor() as cursor:
-
-            cursor.execute("SELECT ID_Usuario FROM Usuario WHERE Login = %s", (Login,))
+            cursor.execute("SELECT * FROM Usuario WHERE Email = %s OR CPF = %s", (email, cpf))
             if cursor.fetchone():
-                request.session["nao_autenticado"] = True
-                request.session["mensagem_header"] = "Cadastro"
-                request.session["mensagem"] = "Erro: Este login já está em uso!"
-                return RedirectResponse(url="/", status_code=303)
+                print("❌ Email ou CPF já existe.")
+                raise HTTPException(status_code=400, detail="Email ou CPF já cadastrados.")
+            try:
+                data_nascimento = datetime.strptime(dt_nasc, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Data de nascimento inválida. Use o formato YYYY-MM-DD.")
+            
+            senha_hash = hash_password(senha)  # Criptografando a senha antes de salvar no banco
 
-            sql = "INSERT INTO Usuario (Nome, Celular, Login, Senha) VALUES (%s, %s, %s, MD5(%s))"
-            cursor.execute(sql, (nome, Celular, Login, Senha1))
+            cursor.execute("""
+                INSERT INTO Usuario (Nome, Email, Senha, Dt_Nasc, Telefone, CPF)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (nome, email, senha_hash, data_nascimento, telefone, cpf))
+
             db.commit()
+            
+            cursor.execute("SELECT * FROM Usuario WHERE Email = %s", (email,))
+            novo_usuario = cursor.fetchone()
+            print("🧾 Usuário inserido:", novo_usuario)
 
-            request.session["nao_autenticado"] = True
-            request.session["mensagem_header"] = "Cadastro"
-            request.session["mensagem"] = "Registro cadastrado com sucesso! Você já pode realizar login."
-            return RedirectResponse(url="/", status_code=303)
+            return {"message": "✅ Usuário cadastrado com sucesso!"}
 
     except Exception as e:
-        request.session["nao_autenticado"] = True
-        request.session["mensagem_header"] = "Cadastro"
-        request.session["mensagem"] = f"Erro ao cadastrar: {str(e)}"
-        return RedirectResponse(url="/", status_code=303)
-
+        print("💥 Erro:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+
+
+@app.get("/editar_usuario/{usuario_id}", response_class=HTMLResponse)
+async def editar_usuario_form(usuario_id: int, request: Request, db=Depends(get_db)):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM Usuario WHERE ID = %s", (usuario_id,))
+            usuario = cursor.fetchone()
+            if not usuario:
+                return HTMLResponse(content="Usuário não encontrado", status_code=404)
+
+            # Transforma em dict
+            colunas = [desc[0] for desc in cursor.description]
+            usuario_dict = dict(zip(colunas, usuario))
+
+        return templates.TemplateResponse("editar_usuario.html", {
+            "request": request,
+            "usuario": usuario_dict
+        })
+
+    except Exception as e:
+        print("Erro ao buscar usuário:", e)
+        return HTMLResponse(content="Erro ao carregar usuário.", status_code=500)
+    finally:
+        db.close()
+
+
+
+@app.post("/editar_usuario/{usuario_id}")
+async def salvar_edicao_usuario(
+    usuario_id: int,
+    nome: str = Form(...),
+    email: str = Form(...),
+    dt_nasc: str = Form(...),
+    telefone: str = Form(...),
+    db=Depends(get_db)
+):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE Usuario
+                SET Nome = %s, Email = %s, Dt_Nasc = %s, Telefone = %s
+                WHERE ID = %s
+            """, (nome, email, dt_nasc, telefone, usuario_id))
+            db.commit()
+        return RedirectResponse(url="/usuarios", status_code=302)
+
+    except Exception as e:
+        print("Erro ao editar usuário:", e)
+        return HTMLResponse(content="Erro ao salvar edição.", status_code=500)
+    finally:
+        db.close()
+
+
+
         
 @app.post("/prodincluir_exe", name="prodincluir_exe")
 async def prodincluir_exe(
