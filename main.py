@@ -11,9 +11,7 @@ from datetime import date, datetime
 from typing import Annotated
 from passlib.context import CryptContext
 
-
 app = FastAPI()
-
 
 # Criação do contexto de criptografia
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -39,7 +37,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "1234",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -263,7 +261,11 @@ async def salvar_edicao_usuario(
     finally:
         db.close()
 
-
+# opcional: rota de logout
+@app.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/")
 
         
 @app.post("/prodincluir_exe", name="prodincluir_exe")
@@ -282,10 +284,10 @@ async def prodincluir_exe(
             sql = "INSERT INTO Produto (Nome_Produto, Descr_Produto, Preco_prod, Tipo_prod, Qtn_Produto) VALUES (%s, %s, %s, %s, %s)"
             cursor.execute(sql, (nome, descr, preco, tipo, qtd))
             db.commit()
-            return RedirectResponse(url="catalogo", status_code=303)
+            return RedirectResponse(url="/catalogo", status_code=303)
 
     except Exception as e:
-        return RedirectResponse(url="catalogo", status_code=303)
+        return RedirectResponse(url="/catalogo", status_code=303)
 
     finally:
         db.close()
@@ -413,7 +415,7 @@ async def prodatualizar_exe(
     finally:
         db.close()
 
-    return RedirectResponse(url="catalogo", status_code=303)
+    return RedirectResponse(url="/catalogo", status_code=303)
 
     # return templates.TemplateResponse("prodatualizar_exe.html", {
     #     "request": request,
@@ -427,4 +429,4 @@ async def reset_session(request: Request):
     request.session.pop("mensagem", None)
     return {"status": "ok"}
 
-Mangum(app)
+handler = Mangum(app)
