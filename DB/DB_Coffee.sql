@@ -5,9 +5,9 @@ USE coffee;
 
 CREATE TABLE Usuario (
     Id int PRIMARY KEY AUTO_INCREMENT,
-    Nome VARCHAR(20),
+    Nome VARCHAR(100),
     Email VARCHAR(50),
-    Senha VARCHAR(50),
+    Senha VARCHAR(100),
     Dt_Nasc Date,
     Telefone VARCHAR(20),
     CPF VARCHAR(20)
