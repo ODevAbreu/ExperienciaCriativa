@@ -37,7 +37,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -279,19 +279,28 @@ async def prodincluir_exe(
     qtd: str = Form(...),
     db = Depends(get_db)
 ):
-    print("chamou................ @app.get(/incluir)")
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor() as cursor:
             sql = "INSERT INTO Produto (Nome_Produto, Descr_Produto, Preco_prod, Tipo_prod, Qtn_Produto) VALUES (%s, %s, %s, %s, %s)"
             cursor.execute(sql, (nome, descr, preco, tipo, qtd))
             db.commit()
+            request.session["mensagem_header"] = "Cadastro de Produto"
+            request.session["mensagem"] = f"Produto cadastrado com sucesso."
             return RedirectResponse(url="/catalogo", status_code=303)
 
     except Exception as e:
-        return RedirectResponse(url="/catalogo", status_code=303)
+        request.session["mensagem_header"] = "Erro ao Cadastrar Produto"
+        request.session["mensagem"] = str(e)
 
     finally:
         db.close()
+    return templates.TemplateResponse("prodincluir_exe.html", {
+        "request": request,
+        "mensagem_header": request.session.get("mensagem_header", ""),
+        "mensagem": request.session.get("mensagem", "")
+    })
 
 @app.get("/catalogo", name="catalogo", response_class=HTMLResponse)
 async def listar_prod(request: Request, db=Depends(get_db)):
@@ -337,6 +346,9 @@ async def listar_prod(request: Request, db=Depends(get_db)):
 
 @app.get("/prodexcluir", response_class=HTMLResponse)
 async def prodexcluir(request: Request, id: int, db=Depends(get_db)):
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
+    
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
         sql = ("SELECT * FROM Produto p WHERE p.ID_Produto = %s")
         cursor.execute(sql, (id,))
@@ -377,7 +389,8 @@ async def prodexcluir_exe(request: Request, id: int = Form(...), db=Depends(get_
 
 @app.get("/prodatualizar", response_class=HTMLResponse)
 async def prodatualizar(request: Request, id: int, db=Depends(get_db)):
-
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
         cursor.execute("SELECT * FROM Produto p WHERE p.ID_Produto = %s", (id,))
         produto = cursor.fetchone()
@@ -400,8 +413,8 @@ async def prodatualizar_exe(
     qtd: str = Form(...),
     db=Depends(get_db)
 ):
-    # if not request.session.get("user_logged_in"):
-    #     return RedirectResponse(url="/", status_code=303)
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor() as cursor:
             sql = """UPDATE Produto
@@ -409,20 +422,22 @@ async def prodatualizar_exe(
                      WHERE ID_Produto=%s"""
             cursor.execute(sql, ( nome, descr, preco, tipo, qtd, id))
             db.commit()
-
+            request.session["mensagem_header"] = "Alterar Produto"
+            request.session["mensagem"] = f"Produto alterado com sucesso."
+            return RedirectResponse(url="/catalogo", status_code=303)
     except Exception as e:
         request.session["mensagem_header"] = "Erro ao atualizar"
         request.session["mensagem"] = str(e)
     finally:
         db.close()
 
-    return RedirectResponse(url="/catalogo", status_code=303)
+ 
 
-    # return templates.TemplateResponse("prodatualizar_exe.html", {
-    #     "request": request,
-    #     "mensagem_header": request.session.get("mensagem_header", ""),
-    #     "mensagem": request.session.get("mensagem", ""),
-    # })
+    return templates.TemplateResponse("prodatualizar_exe.html", {
+        "request": request,
+        "mensagem_header": request.session.get("mensagem_header", ""),
+        "mensagem": request.session.get("mensagem", ""),
+    })
 
 @app.post("/reset_session")
 async def reset_session(request: Request):

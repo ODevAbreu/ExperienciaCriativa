@@ -26,6 +26,11 @@
 
   <main class="catalogo">
     <aside id="aside">
+
+      {% if request.session.get("user_logged_in") %}
+      <a href="./incluirproduto" ><button style="width: 100%;" class="btn btn-primary">Cadastrar Produto</button></a>
+      {% endif %}
+
       <div class="form-group">
         <input type="text" class="form-control" id="filtro" aria-describedby="filtro" placeholder="Procurar Produtos">
       </div>
@@ -55,7 +60,7 @@
         </div>
       </div>
       <button id="filtrar" id="abrir-filtro" class="btn btn-primary">Filtrar</button>
-      <a href="./incluirproduto" ><button id="filtrar" id="abrir-filtro" class="btn btn-primary">Cadastrar Produto</button></a>
+
     </aside>
     <div class="card-deck">
     {% for prod in produtos %}
@@ -66,9 +71,15 @@
           <p class="card-text">{{prod.Descr_Produto}}</p>
           <div class="d-flex justify-content-between align-items-center">
             <a>R${{prod.Preco_prod}}</a>
+
+            {% if request.session.get("user_logged_in") %}
             <a href="./prodatualizar?id={{prod.ID_Produto}}" class="btn btn-primary">Alterar</a>
             <a href="./prodexcluir?id={{prod.ID_Produto}}" class="btn btn-primary">Excluir</a>
-            <!-- <a href="./carrinho.html" class="btn btn-primary">Comprar</a> -->
+
+            {% else %}
+             <a href="./carrinho.html" class="btn btn-primary">Comprar</a>
+
+            {% endif %}
           </div>
         </div>
       </div>
