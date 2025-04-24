@@ -16,7 +16,6 @@
 </head>
 <body>
   <div id="app">
-    <!-- NAVBAR -->
     <nav class="navbar">
       <div class="container">
         <a class="navbar-brand" href="/">
@@ -30,8 +29,15 @@
         <ul class="nav-links" id="navLinks">
           <li><a href="/" class="active">Início</a></li>
           <li><a href="/catalogo">Catálogo</a></li>
-          <li><a href="/login">Entre ou Cadastre-se</a></li>
+        
+          {% if request.session.get("user_logged_in") %}
+            <li><a href="#">Bem-vindo, {{ request.session.get("nome_usuario") }}</a></li>
+            <li><a href="/logout">Sair</a></li>
+          {% else %}
+            <li><a href="/login">Entre ou Cadastrar-se</a></li>
+          {% endif %}
         </ul>
+        
       </div>
     </nav>
 

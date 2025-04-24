@@ -1,49 +1,86 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Usuário - Coffee or Nothing{% endblock %}
+{% block title %}Editar Usuário ‑ Coffee or Nothing{% endblock %}
 
 {% block content %}
-
-
-<body style="background-color: #694940;"> 
-
+<body style="background-color:#694940;">
   <section class="vh-100 d-flex justify-content-center align-items-center">
     <div class="container">
       <div class="row d-flex justify-content-center">
-        <div class="col-md-12 col-lg-9"> 
-          <div class="card p-4" style="border-radius: 1rem;">
+        <div class="col-md-12 col-lg-9">
+          <div class="card p-4" style="border-radius:1rem;">
             <div class="card-body text-black">
 
               <h1 class="fw-bold text-center mb-4">Editar Usuário</h1>
 
+              <!-- ID vem de usuario.ID -->
               <form method="POST" action="/editar_usuario/{{ usuario.Id }}">
                 <div class="row">
+
+                  <!-- Nome -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="nome">Nome Completo</label>
-                    <input type="text" id="nome" name="nome" class="form-control" placeholder="Exemplo: Logan Borges" value="{{ usuario.Nome }}" required/>
+                    <input
+                      type="text"
+                      id="nome"
+                      name="nome"
+                      class="form-control"
+                      placeholder="Ex.: Logan Borges"
+                      value="{{ usuario.Nome }}"
+                      required
+                    />
                   </div>
 
+                  <!-- E‑mail -->
                   <div class="col-12 col-md-6 mb-3">
-                    <label class="form-label" for="email">E-mail</label>
-                    <input type="email" id="email" name="email" class="form-control" value="{{ usuario.Email }}" required />
+                    <label class="form-label" for="email">E‑mail</label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      class="form-control"
+                      value="{{ usuario.Email }}"
+                      required
+                    />
                   </div>
 
+                  <!-- Telefone -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="telefone">Número de telefone</label>
-                    <input onkeydown="return mascaraTelefone(event)" type="text" id="telefone" name="telefone" class="form-control" value="{{ usuario.Telefone }}" required/>
+                    <input
+                      onkeydown="return mascaraTelefone(event)"
+                      type="text"
+                      id="telefone"
+                      name="telefone"
+                      class="form-control"
+                      value="{{ usuario.Telefone }}"
+                      required
+                    />
                   </div>
 
+                  <!-- Data de nascimento -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="dt_nasc">Data de Nascimento</label>
-                    <input type="date" id="dt_nasc" name="dt_nasc" class="form-control" value="{{ usuario.Dt_Nasc }}" required />
+                    <input
+                      type="date"
+                      id="dt_nasc"
+                      name="dt_nasc"
+                      class="form-control"
+                      value="{{ usuario.Dt_Nasc }}"
+                      required
+                    />
                   </div>
 
                   <div class="d-grid mt-4">
-                    <button class="btn btn-dark btn-custom" type="submit">Salvar Alterações</button>
+                    <button class="btn btn-dark btn-custom" type="submit">
+                      Salvar Alterações
+                    </button>
                   </div>
 
                   <p class="mt-3 text-center">
-                    <a href="/usuarios" class="text-decoration-none" style="color: #393f81;">Voltar para a lista</a>
+                    <a href="/usuarios" class="text-decoration-none" style="color:#393f81;">
+                      Voltar para a lista
+                    </a>
                   </p>
                 </div>
               </form>
@@ -54,5 +91,4 @@
       </div>
     </div>
   </section>
-
 {% endblock %}

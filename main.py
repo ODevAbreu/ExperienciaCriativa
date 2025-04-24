@@ -37,7 +37,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -51,7 +51,7 @@ def get_db():
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     if request.session.get("user_logged_in"):
-        return RedirectResponse(url="/catalogo", status_code=303)
+        return RedirectResponse(url="/index", status_code=303)
 
     login_error = request.session.pop("login_error", None)
     show_login_modal = request.session.pop("show_login_modal", False)
@@ -73,6 +73,17 @@ async def login(
     #return RedirectResponse(url="/login.html", status_code=303)
     # Renderiza o template 'medListar.html' com os dados dos médicos
     return templates.TemplateResponse("login.html", {
+        "request": request,
+    })
+    
+@app.get("/index")
+async def index(
+    request: Request
+):
+    print("chamou................ @app.get(/login)")
+    #return RedirectResponse(url="/login.html", status_code=303)
+    # Renderiza o template 'medListar.html' com os dados dos médicos
+    return templates.TemplateResponse("index.html", {
         "request": request,
     })
     
@@ -145,7 +156,7 @@ async def login(
                 if verify_password(Senha, senha_hash):
                     request.session["user_logged_in"] = True
                     request.session["nome_usuario"] = nome_usuario
-                    return RedirectResponse(url="/catalogo", status_code=303)
+                    return RedirectResponse(url="/index", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {
                         "request": request,
@@ -180,60 +191,59 @@ async def cadastrar_usuario(
 ):
     try:
         with db.cursor() as cursor:
-            cursor.execute("SELECT * FROM Usuario WHERE Email = %s OR CPF = %s", (email, cpf))
+            cursor.execute("SELECT 1 FROM Usuario WHERE Email=%s OR CPF=%s", (email, cpf))
             if cursor.fetchone():
-                print("❌ Email ou CPF já existe.")
                 raise HTTPException(status_code=400, detail="Email ou CPF já cadastrados.")
             try:
                 data_nascimento = datetime.strptime(dt_nasc, "%Y-%m-%d").date()
             except ValueError:
                 raise HTTPException(status_code=400, detail="Data de nascimento inválida. Use o formato YYYY-MM-DD.")
-            
-            senha_hash = hash_password(senha)  # Criptografando a senha antes de salvar no banco
+
+            senha_hash = hash_password(senha)
 
             cursor.execute("""
                 INSERT INTO Usuario (Nome, Email, Senha, Dt_Nasc, Telefone, CPF)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (nome, email, senha_hash, data_nascimento, telefone, cpf))
-
             db.commit()
-            
-            cursor.execute("SELECT * FROM Usuario WHERE Email = %s", (email,))
-            novo_usuario = cursor.fetchone()
-            print("🧾 Usuário inserido:", novo_usuario)
 
-            return {"message": "✅ Usuário cadastrado com sucesso!"}
-
+    except HTTPException:     
+        raise
     except Exception as e:
-        print("💥 Erro:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+    return RedirectResponse(url="/login", status_code=303)
 
 
 @app.get("/editar_usuario/{usuario_id}", response_class=HTMLResponse)
 async def editar_usuario_form(usuario_id: int, request: Request, db=Depends(get_db)):
     try:
         with db.cursor() as cursor:
-            cursor.execute("SELECT * FROM Usuario WHERE ID = %s", (usuario_id,))
+            cursor.execute("SELECT * FROM Usuario WHERE Id = %s", (usuario_id,))
             usuario = cursor.fetchone()
-            if not usuario:
-                return HTMLResponse(content="Usuário não encontrado", status_code=404)
 
-            # Transforma em dict
-            colunas = [desc[0] for desc in cursor.description]
+            if not usuario:
+                return HTMLResponse("Usuário não encontrado", status_code=404)
+
+            # transforma a tupla em dict
+            colunas = [d[0] for d in cursor.description]
             usuario_dict = dict(zip(colunas, usuario))
 
-            return templates.TemplateResponse("login.html", {
-                "request": request,
-                "erro": "Usuário não encontrado"
-            })
+            return templates.TemplateResponse(
+                "editar_usuario.html",            #  <-- seu template do formulário
+                {
+                    "request": request,
+                    "usuario": usuario_dict       #  <-- passa os dados
+                }
+            )
 
     except Exception as e:
         print("Erro ao buscar usuário:", e)
-        return HTMLResponse(content="Erro ao carregar usuário.", status_code=500)
+        return HTMLResponse("Erro ao carregar usuário.", status_code=500)
     finally:
         db.close()
+
 
 
 
@@ -251,7 +261,7 @@ async def salvar_edicao_usuario(
             cursor.execute("""
                 UPDATE Usuario
                 SET Nome = %s, Email = %s, Dt_Nasc = %s, Telefone = %s
-                WHERE ID = %s
+                WHERE Id = %s
             """, (nome, email, dt_nasc, telefone, usuario_id))
             db.commit()
         return RedirectResponse(url="/usuarios", status_code=302)
