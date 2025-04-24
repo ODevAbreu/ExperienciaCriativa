@@ -11,6 +11,7 @@ CREATE TABLE Usuario (
     Dt_Nasc Date,
     Telefone VARCHAR(20),
     CPF VARCHAR(20)
+    ADM BOOLEAN
 );
 
 CREATE TABLE Compra (

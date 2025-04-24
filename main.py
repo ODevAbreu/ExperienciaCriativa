@@ -37,7 +37,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "1234",
     "database": "coffee"
 }
 
@@ -152,10 +152,11 @@ async def login(
             user = cursor.fetchone()
 
             if user:
-                user_id, nome_usuario, email_usuario, senha_hash, *_ = user
+                (_, nome_usuario, email_usuario, senha_hash, _, _, _, adm) = user
                 if verify_password(Senha, senha_hash):
                     request.session["user_logged_in"] = True
                     request.session["nome_usuario"] = nome_usuario
+                    request.session["ADM"] = adm
                     return RedirectResponse(url="/index", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {
@@ -202,9 +203,9 @@ async def cadastrar_usuario(
             senha_hash = hash_password(senha)
 
             cursor.execute("""
-                INSERT INTO Usuario (Nome, Email, Senha, Dt_Nasc, Telefone, CPF)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (nome, email, senha_hash, data_nascimento, telefone, cpf))
+                INSERT INTO Usuario (Nome, Email, Senha, Dt_Nasc, Telefone, CPF, ADM)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (nome, email, senha_hash, data_nascimento, telefone, cpf,False))
             db.commit()
 
     except HTTPException:     
