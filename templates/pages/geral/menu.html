@@ -27,6 +27,7 @@
           <li><a href="/catalogo">Catálogo</a></li>
         
           {% if request.session.get("user_logged_in") %}
+            <li><a href= "/usuarios"> Lista Usuario</a></li>
             <li><a href="#">Bem-vindo, {{ request.session.get("nome_usuario") }}</a></li>
             <li><a href="/logout">Sair</a></li>
           {% else %}
