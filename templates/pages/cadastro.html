@@ -13,6 +13,12 @@
           border-color: #744321;
           color: #f5f5dc;
         }
+        @media (min-width: 768px) {
+          .card-fixed {
+            max-height: 550px;
+            overflow-y: auto;
+        }
+      }
     </style>
 
 </head>
@@ -22,7 +28,7 @@
   <div class="container">
     <div class="row d-flex justify-content-center">
       <div class="col-md-12 col-lg-9"> 
-        <div class="card p-4" style="border-radius: 1rem;">
+        <div class="card p-4 card-fixed" style="border-radius: 1rem;">
           <div class="card-body text-black">
 
             <h1 class="fw-bold text-center mb-4">Cadastro</h1>
@@ -42,8 +48,18 @@
                 <div class="col-12 col-md-6 mb-3">
                   <label class="form-label" for="senha">Senha</label>
                   <div class="input-group">
-                    <input type="password" required id="senha" name="senha" placeholder="Digite sua senha" class="form-control" pattern="^(?=.*[A-Z])(?=.*\d).{8,}$" title="Deve conter pelo menos uma letra maiúscula, um número e no mínimo 8 caracteres" />
+                    <input type="password" required id="senha" name="senha" placeholder="Digite sua senha" class="form-control" pattern="^(?=.*[A-Z])(?=.*\d).(?=.*[\W_]).{8,}$" title="Deve conter pelo menos uma letra maiúscula, um número, um caractere especial e no mínimo 8 caracteres" />
                     <button class="btn btn-outline-secondary" type="button" id="toggleSenha">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6 mb-3">
+                  <label class="form-label" for="confirmarSenha">Confirmar Senha</label>
+                  <div class="input-group">
+                    <input type="password" required id="confirmarSenha" name="confirmarSenha" placeholder="Confirme sua senha" class="form-control" />
+                    <button class="btn btn-outline-secondary" type="button" id="toggleConfirmarSenha">
                       <i class="bi bi-eye"></i>
                     </button>
                   </div>
@@ -85,147 +101,124 @@
 <script>
 
 function mascaraTelefone(event) {
-  let tecla = event.key;
-  // Regex: 
-  // g = não termina verificação enquanto não houver combinação para todos os elementos da Regex
-  // \D+ = troca qualquer caractere que não seja um dígito por caracter vazio
-  let telefone = event.target.value.replace(/\D+/g, "");
-
-  // Regex: i = case insensitive
-  // Se Tecla é número, concatena com telefone
-  if (/^[0-9]$/i.test(tecla)) {
-    telefone = telefone + tecla;
-    let tamanho = telefone.length;
-
-    if (tamanho >= 12) { // Se telefone com 12 ou mais caracteres, não faz mais nada
-      return false;
-    }
-
-    if (tamanho > 10) { 
-      telefone = telefone.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
-    } else if (tamanho > 5) { 
-      telefone = telefone.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
-    } else if (tamanho > 2) { 
-      telefone = telefone.replace(/^(\d\d)(\d{0,5})/, "($1) $2");
-    } else {
-      telefone = telefone.replace(/^(\d*)/, "($1");
-    }
-
-    event.target.value = telefone;
-  }
-
-  if (!["Backspace", "Delete", "Tab"].includes(tecla)) {
-    return false;
+  let input = event.target;
+  let value = input.value.replace(/\D/g, ''); // Remove todos os caracteres não numéricos
+  if (value.length <= 2) {
+    input.value = `(${value}`;
+  } else if (value.length <= 6) {
+    input.value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+  } else {
+    input.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`;
   }
 }
-
 
 function mascaraCPF(event) {
-  let tecla = event.key;
-  let cpf = event.target.value.replace(/\D+/g, ""); // Remove tudo que não for número
-
-  // Se a tecla for um número, adiciona ao CPF
-  if (/^[0-9]$/i.test(tecla)) {
-    cpf = cpf + tecla;
-    let tamanho = cpf.length;
-
-    if (tamanho >= 12) { // Se CPF tiver mais de 11 dígitos, não faz mais nada
-      return false;
-    }
-
-    // Aplica a máscara no formato XXX.XXX.XXX-XX
-    if (tamanho > 9) {
-      cpf = cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,2}).*/, "$1.$2.$3-$4");
-    } else if (tamanho > 6) {
-      cpf = cpf.replace(/^(\d{3})(\d{3})(\d{0,3})/, "$1.$2.$3");
-    } else if (tamanho > 3) {
-      cpf = cpf.replace(/^(\d{3})(\d{0,3})/, "$1.$2");
-    }
-
-    event.target.value = cpf;
-  }
-
-  // Permite apenas backspace, delete e tab
-  if (!["Backspace", "Delete", "Tab"].includes(tecla)) {
-    return false;
+  let input = event.target;
+  let value = input.value.replace(/\D/g, ''); // Remove todos os caracteres não numéricos
+  if (value.length <= 3) {
+    input.value = value;
+  } else if (value.length <= 6) {
+    input.value = `${value.slice(0, 3)}.${value.slice(3)}`;
+  } else if (value.length <= 9) {
+    input.value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`;
+  } else {
+    input.value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9, 11)}`;
   }
 }
 
-// Função para validar CPF
+
+// Validação CPF
 function validarCPF(cpf) {
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false; // Verifica se todos os dígitos são iguais ou tamanho inválido
-
-  let soma = 0;
-  let resto;
-
-  // Calcula o primeiro dígito verificador
-  for (let i = 1; i <= 9; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-  }
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+  let soma = 0, resto;
+  for (let i = 1; i <= 9; i++) soma += parseInt(cpf[i - 1]) * (11 - i);
   resto = (soma * 10) % 11;
   if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(9, 10))) return false;
-
+  if (resto !== parseInt(cpf[9])) return false;
   soma = 0;
-
-  // Calcula o segundo dígito verificador
-  for (let i = 1; i <= 10; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-  }
+  for (let i = 1; i <= 10; i++) soma += parseInt(cpf[i - 1]) * (12 - i);
   resto = (soma * 10) % 11;
   if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(10, 11))) return false;
-
-  return true;
+  return resto === parseInt(cpf[10]);
 }
 
+// Limita data de nascimento ao hoje
 document.getElementById('data').setAttribute('max', new Date().toISOString().split('T')[0]);
 
+// Mostrar/ocultar senha
 document.getElementById('toggleSenha').addEventListener('click', function () {
-    var senhaInput = document.getElementById('senha');
-    var icon = this.querySelector('i');
+  const input = document.getElementById('senha');
+  const icon = this.querySelector('i');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  icon.classList.toggle('bi-eye');
+  icon.classList.toggle('bi-eye-slash');
+});
+document.getElementById('toggleConfirmarSenha').addEventListener('click', function () {
+  const input = document.getElementById('confirmarSenha');
+  const icon = this.querySelector('i');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  icon.classList.toggle('bi-eye');
+  icon.classList.toggle('bi-eye-slash');
+});
 
-    if (senhaInput.type === 'password') {
-      senhaInput.type = 'text';
-      icon.classList.remove('bi-eye');
-      icon.classList.add('bi-eye-slash');
-    } else {
-      senhaInput.type = 'password';
-      icon.classList.remove('bi-eye-slash');
-      icon.classList.add('bi-eye');
-    }
-  });
-
+// Validação completa no botão
 document.getElementById('btnCadastrar').addEventListener('click', function (event) {
-  event.preventDefault(); // Previne o envio do formulário
+  event.preventDefault();
 
-  const cpfInput = document.getElementById('cpf');
-  const cpf = cpfInput.value.replace(/\D+/g, ""); // Remove a máscara do CPF
+  const nome = document.getElementById('nome').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const senha = document.getElementById('senha').value;
+  const confirmarSenha = document.getElementById('confirmarSenha').value;
+  const cpf = document.getElementById('cpf').value.replace(/\D+/g, "");
+  const telefone = document.getElementById('telefone').value.trim();
+  const data = document.getElementById('data').value;
 
-  if (!validarCPF(cpf)) {
-    Swal.fire({
-      icon: 'error',
-      title: 'CPF inválido!',
-      text: 'Por favor, insira um CPF válido.',
-      confirmButtonColor: '#744321'
-    });
-    cpfInput.focus(); // Foca no campo de CPF
+  if (nome.length < 5) {
+    Swal.fire({ icon: 'error', title: 'Nome inválido!', text: 'O nome deve conter pelo menos 5 caracteres.', confirmButtonColor: '#744321' });
     return;
   }
 
-  // Se o CPF for válido, exibe mensagem de sucesso
+  if (!email.includes('@') || !email.includes('.')) {
+    Swal.fire({ icon: 'error', title: 'E-mail inválido!', text: 'Informe um e-mail válido.', confirmButtonColor: '#744321' });
+    return;
+  }
+
+  if (!senha.match(/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/)) {
+    Swal.fire({ icon: 'error', title: 'Senha inválida!', text: 'A senha deve conter pelo menos uma letra maiúscula, um número, um caractere especial e 8 caracteres.', confirmButtonColor: '#744321' });
+    return;
+  }
+
+  if (senha !== confirmarSenha) {
+    Swal.fire({ icon: 'error', title: 'Senhas diferentes!', text: 'A senha e a confirmação não coincidem.', confirmButtonColor: '#744321' });
+    return;
+  }
+
+  if (!validarCPF(cpf)) {
+    Swal.fire({ icon: 'error', title: 'CPF inválido!', text: 'Digite um CPF válido.', confirmButtonColor: '#744321' });
+    return;
+  }
+
+  if (!telefone.match(/\(\d{2}\) \d{4,5}-\d{4}/)) {
+    Swal.fire({ icon: 'error', title: 'Telefone inválido!', text: 'Digite o telefone no formato correto: (xx) xxxx-xxxx ou (xx) xxxxx-xxxx.', confirmButtonColor: '#744321' });
+    return;
+  }
+
+  if (!data) {
+    Swal.fire({ icon: 'error', title: 'Data de nascimento!', text: 'Informe sua data de nascimento.', confirmButtonColor: '#744321' });
+    return;
+  }
+
   Swal.fire({
     icon: 'success',
     title: 'Cadastro realizado!',
     text: 'Seu cadastro foi concluído com sucesso.',
     confirmButtonColor: '#744321'
   }).then(() => {
-    // Aqui você pode enviar o formulário manualmente, se necessário
     document.querySelector('form').submit();
   });
 });
-
 </script>
+
 
 
 </body>
