@@ -135,8 +135,6 @@ async def login(
     Senha: str = Form(...),
     db = Depends(get_db)
 ):
-    print("🔐 Tentativa de login...")
-
     try:
         with db.cursor() as cursor:
             cursor.execute("SELECT * FROM Usuario WHERE Email = %s", (Login,))
@@ -144,18 +142,21 @@ async def login(
 
             if user:
                 user_id, nome_usuario, email_usuario, senha_hash, *_ = user
-
                 if verify_password(Senha, senha_hash):
                     request.session["user_logged_in"] = True
                     request.session["nome_usuario"] = nome_usuario
                     return RedirectResponse(url="/catalogo", status_code=303)
                 else:
-                    request.session["login_error"] = "Senha inválida."
+                    return templates.TemplateResponse("login.html", {
+                        "request": request,
+                        "erro": "Senha incorreta"
+                    })
             else:
-                request.session["login_error"] = "Usuário não encontrado."
+                return templates.TemplateResponse("login.html", {
+                    "request": request,
+                    "erro": "Usuário não encontrado"
+                })
 
-            request.session["show_login_modal"] = True
-            return RedirectResponse(url="/", status_code=303)
     finally:
         db.close()
 
@@ -223,10 +224,10 @@ async def editar_usuario_form(usuario_id: int, request: Request, db=Depends(get_
             colunas = [desc[0] for desc in cursor.description]
             usuario_dict = dict(zip(colunas, usuario))
 
-        return templates.TemplateResponse("editar_usuario.html", {
-            "request": request,
-            "usuario": usuario_dict
-        })
+            return templates.TemplateResponse("login.html", {
+                "request": request,
+                "erro": "Usuário não encontrado"
+            })
 
     except Exception as e:
         print("Erro ao buscar usuário:", e)

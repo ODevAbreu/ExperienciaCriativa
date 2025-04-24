@@ -60,6 +60,11 @@
               <div class="card-body text-black form-container">
                 <h1 class="fw-bold text-center mb-4">Login</h1>
 
+                {% if erro %}
+                <div class="alert alert-danger text-center" role="alert">
+                  {{ erro }}
+                </div>
+                {% endif %}
 
                 <form method="post" action="/login"  enctype="multipart/form-data" >
                   <div class="mb-3">
@@ -113,6 +118,17 @@
     }
   });
 </script>
+
+{% if erro %}
+<script>
+  Swal.fire({
+    icon: 'error',
+    title: 'Erro no login',
+    text: '{{ erro }}',
+    confirmButtonColor: '#744321'
+  });
+</script>
+{% endif %}
 
 </body>
 </html>
