@@ -37,8 +37,8 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "1234",
-    "database": "coffee"
+    "password": "",
+    "database": "coffe"
 }
 
 
@@ -108,11 +108,11 @@ async def incluirproduto(
         "request": request,
     })
 
-@app.get("/usuarios", response_class=HTMLResponse)
-async def listar_usuarios(request: Request, db = Depends(get_db)):
+@app.get("/usuarios/{usuario_id}", response_class=HTMLResponse)
+async def listar_usuarios(usuario_id:int, request: Request, db = Depends(get_db)):
     try:
         with db.cursor() as cursor:
-            cursor.execute("SELECT * FROM Usuario")
+            cursor.execute("SELECT * FROM Usuario WHERE ID = %s", (usuario_id,))
             columns = [col[0] for col in cursor.description]
             usuarios = [dict(zip(columns, row)) for row in cursor.fetchall()]
             return templates.TemplateResponse("listar_usuarios.html", {"request": request, "usuarios": usuarios})
@@ -157,6 +157,7 @@ async def login(
                     request.session["user_logged_in"] = True
                     request.session["nome_usuario"] = nome_usuario
                     request.session["ADM"] = adm
+                    request.session["Id"] = user[0]  # Armazena o ID do usuário na sessão
                     return RedirectResponse(url="/index", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {

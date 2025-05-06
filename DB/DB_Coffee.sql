@@ -13,7 +13,8 @@ CREATE TABLE Usuario (
     CPF VARCHAR(20)
     ADM BOOLEAN
 );
-
+INSERT INTO `usuario` VALUES (1,'Administrador','adm@coffee.com','$2b$12$c0yaoS7wZD6VO90bvZo4ROfGOexHXQhYe7a9YtPD5opeN1rUOnkDq','2025-05-06','(10) 29478-10281','45149549002',1);
+/*SENHA DO ADM : ADM@1234*/;
 CREATE TABLE Compra (
     ID_Compra INT PRIMARY KEY
 );
