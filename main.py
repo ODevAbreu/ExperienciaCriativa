@@ -37,8 +37,8 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
-    "database": "coffe"
+    "password": "PUC@1234",
+    "database": "coffee"
 }
 
 
