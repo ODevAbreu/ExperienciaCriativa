@@ -27,8 +27,8 @@
           <li><a href="/catalogo">Catálogo</a></li>
         
           {% if request.session.get("user_logged_in") %}
-            <li><a href= "/usuarios/{{ request.session.get('Id') }}"> Lista Usuario</a></li>
-            <li><a href="#">Bem-vindo, {{ request.session.get("nome_usuario") }}</a></li>
+            <li><a href="/usuarios/{{ request.session.get('Id') }}">Bem-vindo, {{ request.session.get("nome_usuario") }}</a></li>
+            <li><a href="/carrinho">Carrinho</a></li>
             <li><a href="/logout">Sair</a></li>
           {% else %}
             <li><a href="/login">Entre ou Cadastrar-se</a></li>

@@ -37,7 +37,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -98,12 +98,13 @@ async def cadastro(
         "request": request,
     })
 
+
+
 @app.get("/incluirproduto")
 async def incluirproduto(
     request: Request
 ):
     #return RedirectResponse(url="/login.html", status_code=303)
-    # Renderiza o template 'medListar.html' com os dados dos médicos
     return templates.TemplateResponse("prodIncluir.html", {
         "request": request,
     })
@@ -158,6 +159,20 @@ async def login(
                     request.session["nome_usuario"] = nome_usuario
                     request.session["ADM"] = adm
                     request.session["Id"] = user[0]  # Armazena o ID do usuário na sessão
+                     
+                    cursor.execute("""    
+                        SELECT ID_Compra FROM Compra
+                        WHERE ID_Usuario = %s
+                        ORDER BY ID_Compra DESC
+                        LIMIT 1
+                    """, (user[0],))
+                    compra = cursor.fetchone()
+
+                    if compra:
+                        request.session["id_compra"] = compra[0]
+                    else:
+                        request.session["id_compra"] = None  # ou nem criar esse campo ainda
+                        
                     return RedirectResponse(url="/index", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {
@@ -332,10 +347,7 @@ async def listar_prod(request: Request, db=Depends(get_db)):
                 FROM produto p
         """
         cursor.execute(sql)
-        produtos = cursor.fetchall()  # lista de dicts com dados dos médicos
-
-    # Processa os dados (calcula idade e converte foto para base64 se necessário)
-    hoje = date.today()
+        produtos = cursor.fetchall()  
     for prod in produtos:
         Nome_Produto = prod["Nome_Produto"]
         Descr_Produto = prod["Descr_Produto"]
@@ -450,6 +462,136 @@ async def prodatualizar_exe(
         "mensagem_header": request.session.get("mensagem_header", ""),
         "mensagem": request.session.get("mensagem", ""),
     })
+    
+@app.get("/carrinho")
+async def carrinho(
+    request: Request,
+    db=Depends(get_db)
+):
+    if not request.session.get("user_logged_in"):   
+        return RedirectResponse(url="/", status_code=303)
+    id_cliente = request.session.get("Id")
+    id_compra = request.session.get("id_compra")
+    with db.cursor(pymysql.cursors.DictCursor) as cursor:
+        # Consulta SQL unindo Medico e Especialidade, ordenando por nome
+        sql = """
+            SELECT
+                p.ID_Produto,
+                p.Nome_Produto,
+                p.Descr_Produto,
+                p.Preco_prod,
+                p.Tipo_prod,
+                qp.Qtn_Produto
+            FROM 
+                Produto p
+            JOIN 
+                QTD_Produto qp ON p.ID_Produto = qp.fk_Produto_ID_Produto
+            JOIN 
+                Compra c ON qp.fk_Compra_ID_Compra = c.ID_Compra
+            WHERE 
+                c.ID_Usuario = %s  -- ID do usuário, passaremos isso no cursor
+                AND c.ID_Compra = %s;  -- ID da compra, se necessário para filtrar compras abertas
+        """
+        cursor.execute(sql, (id_cliente, id_compra))
+        produtos = cursor.fetchall() 
+    return templates.TemplateResponse("carrinho.html", {
+        "request": request,
+        "produtos": produtos
+    })
+    
+@app.get("/carrinhoincluir")
+async def carrinhoincluir(request: Request, id_prod: int, db=Depends(get_db)):
+    id_cliente = request.session.get("Id")
+    if not id_cliente:
+        return RedirectResponse("/login", status_code=303)
+
+    try:
+        with db.cursor() as cursor:
+            # Verifica se já há compra em aberto
+            id_compra = request.session.get("id_compra")
+
+            if not id_compra:
+                cursor.execute("INSERT INTO Compra (ID_Usuario) VALUES (%s)", (id_cliente,))
+                db.commit()
+                id_compra = cursor.lastrowid
+                request.session["id_compra"] = id_compra
+
+            # Adiciona ou atualiza produto na QTD_Produto
+            sql = """
+                INSERT INTO QTD_Produto (fk_Compra_ID_Compra, fk_Produto_ID_Produto, Qtn_Produto)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE Qtn_Produto = Qtn_Produto + 1
+            """
+            cursor.execute(sql, (id_compra, id_prod, 1))
+            db.commit()
+
+        request.session["mensagem"] = "Produto adicionado ao carrinho!"
+        print("deuboa", request.session["mensagem"])
+        return RedirectResponse("/carrinho", status_code=303)
+
+    except Exception as e:
+        print(f"Erro ao adicionar produto no carrinho: {str(e)}")
+        request.session["mensagem"] = f"Erro: {str(e)}"
+        return RedirectResponse("/carrinho", status_code=303)
+
+    finally:
+        db.close()
+
+@app.get("/carrinho/remover/{id_prod}")
+async def carrinho_remover(request: Request, id_prod: int, db=Depends(get_db)):
+    id_cliente = request.session.get("Id")
+    if not id_cliente:
+        return RedirectResponse("/login", status_code=303)
+
+    try:
+        with db.cursor() as cursor:
+            # Verifica se já há uma compra em aberto
+            id_compra = request.session.get("id_compra")
+
+            if not id_compra:
+                request.session["mensagem"] = "Não há carrinho de compras aberto."
+                return RedirectResponse("/carrinho", status_code=303)
+
+            # Remove o produto do carrinho
+            cursor.execute("DELETE FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s AND fk_Produto_ID_Produto = %s", (id_compra, id_prod))
+            db.commit()
+
+            request.session["mensagem"] = "Produto removido do carrinho!"
+            return RedirectResponse("/carrinho", status_code=303)
+
+    except Exception as e:
+        request.session["mensagem"] = f"Erro ao remover produto: {str(e)}"
+        return RedirectResponse("/carrinho", status_code=303)
+
+    finally:
+        db.close()
+
+@app.post("/atualizar-quantidade/{product_id}")
+async def atualizar_quantidade(product_id: int, request: Request, db=Depends(get_db)):
+    # Verifica se o usuário está logado
+    qtd: int = Form(...)
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
+    try:
+        # Verifica se a quantidade é válida (não pode ser menor que 1)
+        if qtd < 1:
+            raise ValueError("A quantidade não pode ser menor que 1.")
+        
+        # Atualiza a quantidade do produto no banco de dados
+        with db.cursor() as cursor:
+            sql = """
+                UPDATE QTD_Produto
+                SET Qtn_Produto = %s
+                WHERE fk_Produto_ID_Produto = %s AND fk_Compra_ID_Compra = %s
+            """
+            id_compra = request.session.get("id_compra")
+            cursor.execute(sql, (qtd, product_id, id_compra))
+            db.commit()
+
+        return RedirectResponse("/carrinho", status_code=303)
+    except Exception as e:
+        return {"error": f"Erro ao atualizar a quantidade: {str(e)}"}
+        
 
 @app.post("/reset_session")
 async def reset_session(request: Request):

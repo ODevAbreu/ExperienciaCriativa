@@ -4,7 +4,6 @@ const navLinks = document.getElementById('navLinks');
 
 menuBtn.addEventListener('click', () => {
   navLinks.classList.toggle('active');
-  
   // Animate hamburger menu
   const spans = menuBtn.getElementsByTagName('span');
   for (const span of spans) {
