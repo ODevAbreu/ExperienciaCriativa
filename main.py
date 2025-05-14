@@ -567,9 +567,13 @@ async def carrinho_remover(request: Request, id_prod: int, db=Depends(get_db)):
         db.close()
 
 @app.post("/atualizar-quantidade/{product_id}")
-async def atualizar_quantidade(product_id: int, request: Request, db=Depends(get_db)):
+async def atualizar_quantidade(
+    product_id: int, 
+    request: Request,
+    qtd: int = Form(...),
+    db=Depends(get_db)):
     # Verifica se o usuário está logado
-    qtd: int = Form(...)
+    
     if not request.session.get("user_logged_in"):
         return RedirectResponse(url="/", status_code=303)
     try:

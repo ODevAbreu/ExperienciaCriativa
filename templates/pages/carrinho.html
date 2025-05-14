@@ -39,9 +39,11 @@
 
                 <form action="/atualizar-quantidade/{{prod.ID_Produto}}" method="POST">
                   <input type="hidden" name="qtd" value="{{prod.Qtn_Produto - 1}}">
-                  <button type="submit" class="btn btn-outline-secondary btn-sm">-</button>
+                  <button type="submit" class="btn btn-outline-secondary btn-sm" {% if prod.Qtn_Produto <=1 %}disabled
+                    title="Quantidade mínima é de 1" {% endif %}>-</button>
                 </form>
                 <span class="mx-2">{{prod.Qtn_Produto}}</span>
+
                 <form action="/atualizar-quantidade/{{prod.ID_Produto}}" method="POST">
                   <input type="hidden" name="qtd" value="{{prod.Qtn_Produto + 1}}">
                   <button type="submit" class="btn btn-outline-secondary btn-sm">+</button>
