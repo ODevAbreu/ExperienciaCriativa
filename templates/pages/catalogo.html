@@ -34,35 +34,37 @@
       <a href="./incluirproduto"><button style="width: 100%;" class="btn btn-primary">Cadastrar Produto</button></a>
       {% endif %}
 
-      <div class="form-group">
-        <input type="text" class="form-control" id="filtro" aria-describedby="filtro" placeholder="Procurar Produtos">
-      </div>
+      <form method="GET" action="/catalogo" class="mb-3">
+        <input type="text" class="form-control" name="nome" placeholder="Procurar Produtos" value="{{ nome or '' }}">
 
-      <div class="filtrar">
-        Acesso em: {{ agora }}
-        <h6>Tipo de Café</h6>
+        <h6 class="mt-3">Tipo de Café</h6>
 
-        <div class="filtros">
-          <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault1">
-          <label class="form-check-label" for="flexCheckDefault1">Cappuccino</label>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="tipo" value="Cappuccino"
+            {% if 'Cappuccino' in tipos_selecionados %}checked{% endif %}>
+          <label class="form-check-label">Cappuccino</label>
         </div>
 
-        <div class="filtros">
-          <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault2">
-          <label class="form-check-label" for="flexCheckDefault2">Expresso</label>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="tipo" value="Expresso"
+            {% if 'Expresso' in tipos_selecionados %}checked{% endif %}>
+          <label class="form-check-label">Expresso</label>
         </div>
 
-        <div class="filtros">
-          <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault3">
-          <label class="form-check-label" for="flexCheckDefault3">Latte</label>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="tipo" value="Latte"
+            {% if 'Latte' in tipos_selecionados %}checked{% endif %}>
+          <label class="form-check-label">Latte</label>
         </div>
 
-        <div class="filtros">
-          <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault4">
-          <label class="form-check-label" for="flexCheckDefault4">Mocha</label>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="tipo" value="Mocha"
+            {% if 'Mocha' in tipos_selecionados %}checked{% endif %}>
+          <label class="form-check-label">Mocha</label>
         </div>
-      </div>
-      <button id="filtrar" id="abrir-filtro" class="btn btn-primary">Filtrar</button>
+
+        <button type="submit" class="btn btn-primary mt-2">Filtrar</button>
+      </form>
 
     </aside>
     <div class="card-deck">
