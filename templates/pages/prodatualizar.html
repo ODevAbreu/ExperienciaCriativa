@@ -42,8 +42,10 @@
                 <div class="mb-3">
                   <label class="form-label" for="tipo_prod">Tipo Produto</label>
                   <select name="tipo" id="tipo_prod" class="form-select">
-                    <option value="Bebida" {% if p.Tipo_prod == "Bebida" %}selected{% endif %}>Bebida</option>
-                    <option value="Pó" {% if p.Tipo_prod == "Pó" %}selected{% endif %}>Pó</option>
+                    <option value="Cappuccino" {% if p.Tipo_prod == "Cappuccino" %}selected{% endif %}>Cappuccino</option>
+                    <option value="Expresso" {% if p.Tipo_prod == "Expresso" %}selected{% endif %}>Expresso</option>
+                    <option value="Latte" {% if p.Tipo_prod == "Latte" %}selected{% endif %}>Latte</option>
+                    <option value="Mocha" {% if p.Tipo_prod == "Mocha" %}selected{% endif %}>Mocha</option>
                   </select>
                 </div>                
               </div>

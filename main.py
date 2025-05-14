@@ -6,9 +6,11 @@ from fastapi import FastAPI, Request, Form, Depends, UploadFile, File , HTTPExce
 from fastapi.responses import HTMLResponse, RedirectResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi import Query
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import date, datetime
 from typing import Annotated
+from typing import List
 from passlib.context import CryptContext
 
 app = FastAPI()
@@ -37,7 +39,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -330,43 +332,54 @@ async def prodincluir_exe(
     })
 
 @app.get("/catalogo", name="catalogo", response_class=HTMLResponse)
-async def listar_prod(request: Request, db=Depends(get_db)):
-    # if not request.session.get("user_logged_in"):
-    #     return RedirectResponse(url="/", status_code=303)
+async def listar_prod(
+    request: Request,
+    nome: str = Query(None),
+    tipo: List[str] = Query(default=[]),
+    db=Depends(get_db)
+):
+    print(">>> FUNÇÃO listar_prod FOI CHAMADA <<<")
+    filtros = []
+    valores = []
+
+    if nome:
+        filtros.append("p.Nome_Produto LIKE %s")
+        valores.append(f"%{nome}%")
+
+    if tipo:
+        filtros.append("p.Tipo_prod IN (%s)" % ",".join(["%s"] * len(tipo)))
+        valores.extend(tipo)
+
+    sql = """
+        SELECT
+            p.ID_Produto,
+            p.Nome_Produto,
+            p.Descr_Produto,
+            p.Preco_prod,
+            p.Tipo_prod,
+            p.Qtn_Produto
+        FROM produto p
+    """
+
+    if filtros:
+        sql += " WHERE " + " AND ".join(filtros)
+
+    print("SQL gerado:", sql)
+    print("Valores dos filtros:", valores)
 
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
-        # Consulta SQL unindo Medico e Especialidade, ordenando por nome
-        sql = """
-            SELECT
-                p.ID_Produto,
-                p.Nome_Produto,
-                p.Descr_Produto,
-                p.Preco_prod,
-                p.Tipo_prod,
-                p.Qtn_Produto
-                FROM produto p
-        """
-        cursor.execute(sql)
-        produtos = cursor.fetchall()  
-    for prod in produtos:
-        Nome_Produto = prod["Nome_Produto"]
-        Descr_Produto = prod["Descr_Produto"]
-        Preco_prod = prod["Preco_prod"] 
-        Tipo_prod = prod["Tipo_prod"]
-        Qtn_Produto = prod["Qtn_Produto"]
-        ID_Produto = prod["ID_Produto"]
+        cursor.execute(sql, valores)
+        produtos = cursor.fetchall()
 
-    # nome_usuario = request.session.get("nome_usuario", None)
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-    # Renderiza o template 'medListar.html' com os dados dos médicos
     return templates.TemplateResponse("catalogo.html", {
         "request": request,
         "produtos": produtos,
         "hoje": agora,
-        # "nome_usuario": nome_usuario
+        "nome": nome or "",
+        "tipos_selecionados": tipo
     })
-
 
 @app.get("/prodexcluir", response_class=HTMLResponse)
 async def prodexcluir(request: Request, id: int, db=Depends(get_db)):
@@ -590,8 +603,7 @@ async def atualizar_quantidade(product_id: int, request: Request, db=Depends(get
 
         return RedirectResponse("/carrinho", status_code=303)
     except Exception as e:
-        return {"error": f"Erro ao atualizar a quantidade: {str(e)}"}
-        
+        return {"error": f"Erro ao atualizar a quantidade: {str(e)}"} 
 
 @app.post("/reset_session")
 async def reset_session(request: Request):
