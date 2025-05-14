@@ -83,11 +83,16 @@
             <a href="./prodexcluir?id={{prod.ID_Produto}}" class="btn btn-primary">Excluir</a>
 
             {% else %}
-              {% if request.session.get("user_logged_in") %}
-                <a href="/carrinhoincluir?id_prod={{prod.ID_Produto}}" class="btn btn-primary">Comprar</a>
-              {% else %}
-                <a href="./login" class="btn btn-primary">Comprar</a>
-              {% endif %}
+              
+            {% if request.session.get("user_logged_in") %}
+            {% if prod.no_carrinho %}
+            <a href="/carrinho" class="btn btn-success">Ver no Carrinho</a>
+            {% else %}
+            <a href="/carrinhoincluir?id_prod={{prod.ID_Produto}}" class="btn btn-primary">Comprar</a>
+            {% endif %}
+            {% else %}
+            <a href="/login" class="btn btn-primary">Comprar</a>
+            {% endif %}
             {% endif %}
           </div>
         </div>

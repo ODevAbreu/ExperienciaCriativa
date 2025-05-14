@@ -39,7 +39,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -371,15 +371,30 @@ async def listar_prod(
         cursor.execute(sql, valores)
         produtos = cursor.fetchall()
 
+        produtos_carrinho_ids = set()
+        id_compra = request.session.get("id_compra")
+        if id_compra:
+            cursor.execute("""
+                SELECT fk_Produto_ID_Produto FROM QTD_Produto
+                WHERE fk_Compra_ID_Compra = %s
+            """, (id_compra,))
+            produtos_carrinho = cursor.fetchall()  
+            produtos_carrinho_ids = {item['fk_Produto_ID_Produto'] for item in produtos_carrinho}
+        for prod in produtos:
+            prod["no_carrinho"] = prod["ID_Produto"] in produtos_carrinho_ids
+            
+
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     return templates.TemplateResponse("catalogo.html", {
         "request": request,
         "produtos": produtos,
+        "produtos_carrinho_ids": produtos_carrinho_ids,
         "hoje": agora,
         "nome": nome or "",
         "tipos_selecionados": tipo
     })
+
 
 @app.get("/prodexcluir", response_class=HTMLResponse)
 async def prodexcluir(request: Request, id: int, db=Depends(get_db)):
@@ -509,7 +524,8 @@ async def carrinho(
         produtos = cursor.fetchall() 
     return templates.TemplateResponse("carrinho.html", {
         "request": request,
-        "produtos": produtos
+        "produtos": produtos,
+        "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),	
     })
     
 @app.get("/carrinhoincluir")
@@ -579,35 +595,47 @@ async def carrinho_remover(request: Request, id_prod: int, db=Depends(get_db)):
     finally:
         db.close()
 
+from fastapi import Form
+
 @app.post("/atualizar-quantidade/{product_id}")
-async def atualizar_quantidade(
-    product_id: int, 
-    request: Request,
-    qtd: int = Form(...),
-    db=Depends(get_db)):
-    # Verifica se o usuário está logado
-    
+async def atualizar_quantidade(product_id: int, request: Request, qtd: int = Form(...), db=Depends(get_db)):
     if not request.session.get("user_logged_in"):
         return RedirectResponse(url="/", status_code=303)
+
     try:
-        # Verifica se a quantidade é válida (não pode ser menor que 1)
         if qtd < 1:
             raise ValueError("A quantidade não pode ser menor que 1.")
-        
-        # Atualiza a quantidade do produto no banco de dados
+
+        id_compra = request.session.get("id_compra")
+
         with db.cursor() as cursor:
+            # 1. Verifica o estoque disponível
+            cursor.execute("SELECT Qtn_Produto FROM Produto WHERE ID_Produto = %s", (product_id,))
+            estoque = cursor.fetchone()
+
+            if not estoque:
+                raise ValueError("Produto não encontrado.")
+
+            estoque_disponivel = estoque[0]
+
+            # 2. Verifica se a quantidade desejada é maior que o estoque
+            if qtd > estoque_disponivel:
+                raise ValueError("Quantidade solicitada excede o estoque disponível.")
+
+            # 3. Atualiza a quantidade no carrinho
             sql = """
                 UPDATE QTD_Produto
                 SET Qtn_Produto = %s
                 WHERE fk_Produto_ID_Produto = %s AND fk_Compra_ID_Compra = %s
             """
-            id_compra = request.session.get("id_compra")
             cursor.execute(sql, (qtd, product_id, id_compra))
             db.commit()
 
         return RedirectResponse("/carrinho", status_code=303)
+
     except Exception as e:
-        return {"error": f"Erro ao atualizar a quantidade: {str(e)}"} 
+        return {"error": f"Erro ao atualizar a quantidade: {str(e)}"}
+
 
 @app.post("/reset_session")
 async def reset_session(request: Request):
