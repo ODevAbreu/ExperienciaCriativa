@@ -1,8 +1,9 @@
+import os
 import pymysql
 import base64
 
 from mangum import Mangum
-from fastapi import FastAPI, Request, Form, Depends, UploadFile, File , HTTPException , status 
+from fastapi import FastAPI, Request, Form, Depends, Response, UploadFile, File , HTTPException , status 
 from fastapi.responses import HTMLResponse, RedirectResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -39,7 +40,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -306,15 +307,26 @@ async def prodincluir_exe(
     tipo: str = Form(...),
     preco: str = Form(...),
     qtd: str = Form(...),
+    imagem: UploadFile = File(None),  
     db = Depends(get_db)
 ):
     if not request.session.get("user_logged_in"):
         return RedirectResponse(url="/", status_code=303)
+    
     try:
+        imagem_bytes = None
+        if imagem:
+            imagem_bytes = await imagem.read()
+        
         with db.cursor() as cursor:
-            sql = "INSERT INTO Produto (Nome_Produto, Descr_Produto, Preco_prod, Tipo_prod, Qtn_Produto) VALUES (%s, %s, %s, %s, %s)"
-            cursor.execute(sql, (nome, descr, preco, tipo, qtd))
+            sql = """
+                INSERT INTO Produto 
+                (Nome_Produto, Descr_Produto, Preco_prod, Tipo_prod, Qtn_Produto, Img_Produto) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (nome, descr, preco, tipo, qtd, imagem_bytes))
             db.commit()
+            
             request.session["mensagem_header"] = "Cadastro de Produto"
             request.session["mensagem"] = f"Produto cadastrado com sucesso."
             return RedirectResponse(url="/catalogo", status_code=303)
@@ -330,6 +342,20 @@ async def prodincluir_exe(
         "mensagem_header": request.session.get("mensagem_header", ""),
         "mensagem": request.session.get("mensagem", "")
     })
+
+@app.get("/imagem_produto/{produto_id}")
+async def get_imagem_produto(produto_id: int, db = Depends(get_db)):
+    with db.cursor() as cursor:
+        cursor.execute("SELECT Img_Produto FROM Produto WHERE ID_Produto = %s", (produto_id,))
+        result = cursor.fetchone()
+        if result and result[0]:
+            return Response(content=result[0], media_type="image/jpeg")
+        # Retorna uma imagem padrão se não houver imagem no banco
+        default_image_path = os.path.join("static", "imagens", "coffe.jpeg")
+        with open(default_image_path, "rb") as f:
+            default_image = f.read()
+        return Response(content=default_image, media_type="image/jpeg")
+
 
 @app.get("/catalogo", name="catalogo", response_class=HTMLResponse)
 async def listar_prod(
@@ -357,7 +383,8 @@ async def listar_prod(
             p.Descr_Produto,
             p.Preco_prod,
             p.Tipo_prod,
-            p.Qtn_Produto
+            p.Qtn_Produto,
+            p.Img_Produto
         FROM produto p
     """
 

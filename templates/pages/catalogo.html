@@ -70,8 +70,7 @@
     <div class="card-deck">
       {% for prod in produtos %}
       <div class="card" style="width: 18rem;">
-        <img class="card-img-top" src="{{ url_for('static', path='imagens/coffe.jpeg') }}" alt="imagem do produto"
-          width="150">
+        <img class="card-img-top" src="/imagem_produto/{{prod.ID_Produto}}" alt="imagem do produto" width="150">
         <div class="card-body">
           <h5 class="card-title">{{prod.Nome_Produto}}</h5>
           <p class="card-text">{{prod.Descr_Produto}}</p>
