@@ -536,30 +536,41 @@ async def carrinhoincluir(request: Request, id_prod: int, db=Depends(get_db)):
 
     try:
         with db.cursor() as cursor:
-            # Verifica se já há compra em aberto
-            id_compra = request.session.get("id_compra")
+            # 🔍 Busca uma compra ABERTA para o cliente
+            cursor.execute("""
+                SELECT ID_Compra FROM Compra
+                WHERE ID_Usuario = %s AND Status = 'aberta'
+                ORDER BY ID_Compra DESC LIMIT 1
+            """, (id_cliente,))
+            compra = cursor.fetchone()
 
-            if not id_compra:
-                cursor.execute("INSERT INTO Compra (ID_Usuario) VALUES (%s)", (id_cliente,))
+            # 🆕 Se não tiver compra aberta, cria uma nova
+            if compra:
+                id_compra = compra[0]
+            else:
+                cursor.execute("""
+                    INSERT INTO Compra (ID_Usuario, Status)
+                    VALUES (%s, 'aberta')
+                """, (id_cliente,))
                 db.commit()
                 id_compra = cursor.lastrowid
-                request.session["id_compra"] = id_compra
 
-            # Adiciona ou atualiza produto na QTD_Produto
+            # Salva o ID da compra na sessão
+            request.session["id_compra"] = id_compra
+
+            # ✅ Insere ou atualiza item no carrinho
             sql = """
                 INSERT INTO QTD_Produto (fk_Compra_ID_Compra, fk_Produto_ID_Produto, Qtn_Produto)
-                VALUES (%s, %s, %s)
+                VALUES (%s, %s, 1)
                 ON DUPLICATE KEY UPDATE Qtn_Produto = Qtn_Produto + 1
             """
-            cursor.execute(sql, (id_compra, id_prod, 1))
+            cursor.execute(sql, (id_compra, id_prod))
             db.commit()
 
         request.session["mensagem"] = "Produto adicionado ao carrinho!"
-        print("deuboa", request.session["mensagem"])
         return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
-        print(f"Erro ao adicionar produto no carrinho: {str(e)}")
         request.session["mensagem"] = f"Erro: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
@@ -636,6 +647,40 @@ async def atualizar_quantidade(product_id: int, request: Request, qtd: int = For
     except Exception as e:
         return {"error": f"Erro ao atualizar a quantidade: {str(e)}"}
 
+
+@app.get("/finalizar/{id_compra}")
+async def finalizar(request: Request, id_compra: int, db=Depends(get_db)):
+    id_cliente = request.session.get("Id")
+    if not id_cliente:
+        return RedirectResponse("/login", status_code=303)
+
+    try:
+        with db.cursor() as cursor:
+            # Verifica se já há uma compra em aberto
+            id_compra_sessao = request.session.get("id_compra")
+
+            if not id_compra:
+                request.session["mensagem"] = "Não há carrinho de compras aberto."
+                return RedirectResponse("/carrinho", status_code=303)
+            
+            if id_compra != id_compra_sessao:
+                request.session["mensagem"] = "Não é possível finalizar esta compra."
+                return RedirectResponse("/carrinho", status_code=303)
+        
+
+            # Remove o produto do carrinho
+            cursor.execute("DELETE FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s AND fk_Produto_ID_Produto = %s", (id_compra, id_prod))
+            db.commit()
+
+            request.session["mensagem"] = "Produto removido do carrinho!"
+            return RedirectResponse("/carrinho", status_code=303)
+
+    except Exception as e:
+        request.session["mensagem"] = f"Erro ao remover produto: {str(e)}"
+        return RedirectResponse("/carrinho", status_code=303)
+
+    finally:
+        db.close()
 
 @app.post("/reset_session")
 async def reset_session(request: Request):

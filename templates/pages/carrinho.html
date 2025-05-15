@@ -60,9 +60,19 @@
         {% endfor %}
 
 
-        <div class="cart-summary p-4 border rounded mt-4 bg-white">
-          <h3 class="mb-3">Endereço de Entrega</h3>
-          <input type="text" id="address" class="form-control mb-3" placeholder="Digite seu endereço">
+        <div class="cart-summary p-4 border rounded mt-4 bg-white" style="font-family: 'Poppins', sans-serif !important;">
+          <center><h2 class="mb-3">Endereço de Entrega</h2></center>
+          <h3 class="mb-3">CEP</h3>
+          <input type="number" id="CEP" class="form-control mb-3" placeholder="Digite seu CEP">
+          <h3 class="mb-3">Rua</h3>
+          <input type="text" id="rua" class="form-control mb-3" placeholder="Digite sua rua">
+          <h3 class="mb-3">Número de entrega</h3>
+          <input type="text" id="num_entrega" class="form-control mb-3" placeholder="Digite seu número de entrega">
+          <h3 class="mb-3">Bairro</h3>
+          <input type="text" id="bairro" class="form-control mb-3" placeholder="Digite seu bairro">
+          <h3 class="mb-3">Cidade</h3>
+          <input type="text" id="cidade" class="form-control mb-3" placeholder="Digite sua cidade">
+
           <h3 class="mb-3">Forma de Pagamento</h3>
           <select id="payment-method" class="form-select mb-3">
             <option value="credit">Cartão de Crédito</option>
@@ -74,8 +84,8 @@
             <span class="fw-bold">Total:</span>
             <span id="cartTotal" class="fw-bold" value="{{total}}" >R${{total}}</span>
           </div>
-          <button class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">Finalizar
-            Compra</button>
+          <a href="/finalizar"  class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">Finalizar
+            Compra</a>
         </div>
       </div>
     </section>
