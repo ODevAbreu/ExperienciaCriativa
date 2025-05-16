@@ -40,7 +40,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -544,14 +544,16 @@ async def carrinho(
             JOIN 
                 Compra c ON qp.fk_Compra_ID_Compra = c.ID_Compra
             WHERE 
-                c.ID_Usuario = %s  -- ID do usuário, passaremos isso no cursor
-                AND c.ID_Compra = %s;  -- ID da compra, se necessário para filtrar compras abertas
+                c.ID_Usuario = %s  
+                AND c.ID_Compra = %s
+                AND c.Status = 'aberta';;  
         """
         cursor.execute(sql, (id_cliente, id_compra))
         produtos = cursor.fetchall() 
     return templates.TemplateResponse("carrinho.html", {
         "request": request,
         "produtos": produtos,
+        "id_compra": id_compra,
         "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),	
     })
     
@@ -675,31 +677,71 @@ async def atualizar_quantidade(product_id: int, request: Request, qtd: int = For
         return {"error": f"Erro ao atualizar a quantidade: {str(e)}"}
 
 
-@app.get("/finalizar/{id_compra}")
-async def finalizar(request: Request, id_compra: int, db=Depends(get_db)):
+@app.post("/finalizar/{id_compra}")
+async def finalizar(
+    request: Request,
+    id_compra: int,
+    rua: str = Form(...),
+    num: str = Form(...),
+    bairro: str = Form(...),
+    cidade: str = Form(...),
+    cep: str = Form(...),
+    # pagamento: str = Form(...),
+    db=Depends(get_db)
+):
+    # id_compra_sessao = request.session.get("id_compra")
+    print("chamou", id_compra)
     id_cliente = request.session.get("Id")
+    
     if not id_cliente:
         return RedirectResponse("/login", status_code=303)
 
     try:
         with db.cursor() as cursor:
             # Verifica se já há uma compra em aberto
-            id_compra_sessao = request.session.get("id_compra")
-
-            if not id_compra:
-                request.session["mensagem"] = "Não há carrinho de compras aberto."
-                return RedirectResponse("/carrinho", status_code=303)
-            
-            if id_compra != id_compra_sessao:
-                request.session["mensagem"] = "Não é possível finalizar esta compra."
-                return RedirectResponse("/carrinho", status_code=303)
         
 
-            # Remove o produto do carrinho
-            cursor.execute("DELETE FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s AND fk_Produto_ID_Produto = %s", (id_compra, id_prod))
-            db.commit()
+            # if id_compra != id_compra_sessao:
+            #     request.session["mensagem"] = "Não é possível finalizar esta compra."
+            #     return RedirectResponse("/carrinho", status_code=303)
+        
 
-            request.session["mensagem"] = "Produto removido do carrinho!"
+            # Adicionando endereço de entrega
+             
+            
+            sql = """
+                INSERT INTO endereco (Rua, Numero, Cidade, CEP, fk_ID_Compra,Bairro)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql,(rua,num,cidade, cep,id_compra,bairro))
+            db.commit()
+            id_endereco = cursor.lastrowid
+            print("Endereço adicionado com ID:", id_endereco)
+
+            # Atualizar a compra com o ID do endereço e mudar o status
+            sql = """
+                UPDATE Compra
+                SET Status = 'fechada',
+                    ID_Endereco = %s
+                WHERE ID_Compra = %s
+            """
+            cursor.execute(sql, (id_endereco, id_compra))
+            db.commit()
+            sql = """ 
+                UPDATE Produto
+                SET Qtn_Produto = Qtn_Produto - (
+                    SELECT SUM(Qtn_Produto) FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s
+                )
+                WHERE ID_Produto IN (
+                    SELECT fk_Produto_ID_Produto FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s
+                )
+            """ # sql para atualizar o estoque 
+            cursor.execute(sql, (id_compra, id_compra))
+            db.commit()
+            # Finaliza a compra
+            request.session["id_compra"] = None
+            request.session["mensagem_header"] = "Compra finalizada"
+            request.session["mensagem"] = "Compra finalizada com sucesso!"
             return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
