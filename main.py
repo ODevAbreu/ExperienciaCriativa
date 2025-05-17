@@ -326,7 +326,7 @@ async def prodincluir_exe(
             """
             cursor.execute(sql, (nome, descr, preco, tipo, qtd, imagem_bytes))
             db.commit()
-            
+            request.session["icon"] = "sucess"
             request.session["mensagem_header"] = "Cadastro de Produto"
             request.session["mensagem"] = f"Produto cadastrado com sucesso."
             return RedirectResponse(url="/catalogo", status_code=303)
@@ -440,31 +440,24 @@ async def prodexcluir(request: Request, id: int, db=Depends(get_db)):
         "prod": produto
     })
 
-@app.post("/prodexcluir_exe")
-async def prodexcluir_exe(request: Request, id: int = Form(...), db=Depends(get_db)):
-
+@app.get("/prodexcluir_exe/{id}")
+async def prodexcluir_exe(request: Request, id: int, db = Depends(get_db)):
     try:
         with db.cursor(pymysql.cursors.DictCursor) as cursor:
-
             sql_delete = "DELETE FROM Produto WHERE ID_Produto = %s"
             cursor.execute(sql_delete, (id,))
             db.commit()
 
             request.session["mensagem_header"] = "Exclusão de Produto"
-            request.session["mensagem"] = f"Produto excluído com sucesso."
-
+            request.session["mensagem"] = "Produto excluído com sucesso."
     except Exception as e:
         request.session["mensagem_header"] = "Erro ao excluir"
         request.session["mensagem"] = str(e)
     finally:
         db.close()
 
-    # Redireciona para a página de resultado da exclusão
-    return templates.TemplateResponse("prodexcluir_exe.html", {
-        "request": request,
-        "mensagem_header": request.session.get("mensagem_header", ""),
-        "mensagem": request.session.get("mensagem", "")
-    })
+    # Redireciona diretamente para o catálogo
+    return RedirectResponse(url="/catalogo", status_code=303)
 
 @app.get("/prodatualizar", response_class=HTMLResponse)
 async def prodatualizar(request: Request, id: int, db=Depends(get_db)):
@@ -523,6 +516,8 @@ async def carrinho(
     request: Request,
     db=Depends(get_db)
 ):
+    mensagem_header = request.session.pop("mensagem_header", None)
+    mensagem = request.session.pop("mensagem", None)
     if not request.session.get("user_logged_in"):   
         return RedirectResponse(url="/", status_code=303)
     id_cliente = request.session.get("Id")
@@ -554,6 +549,8 @@ async def carrinho(
         "request": request,
         "produtos": produtos,
         "id_compra": id_compra,
+        "mensagem_header": mensagem_header,
+        "mensagem": mensagem,
         "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),	
     })
     
@@ -595,7 +592,8 @@ async def carrinhoincluir(request: Request, id_prod: int, db=Depends(get_db)):
             """
             cursor.execute(sql, (id_compra, id_prod))
             db.commit()
-
+        request.session["icon"] = "sucess"
+        request.session["mensagem_header"] = "Sucesso!"
         request.session["mensagem"] = "Produto adicionado ao carrinho!"
         return RedirectResponse("/carrinho", status_code=303)
 
@@ -624,7 +622,7 @@ async def carrinho_remover(request: Request, id_prod: int, db=Depends(get_db)):
             # Remove o produto do carrinho
             cursor.execute("DELETE FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s AND fk_Produto_ID_Produto = %s", (id_compra, id_prod))
             db.commit()
-
+            request.session["mensagem_header"] = "Sucesso!"
             request.session["mensagem"] = "Produto removido do carrinho!"
             return RedirectResponse("/carrinho", status_code=303)
 
@@ -660,7 +658,10 @@ async def atualizar_quantidade(product_id: int, request: Request, qtd: int = For
 
             # 2. Verifica se a quantidade desejada é maior que o estoque
             if qtd > estoque_disponivel:
-                raise ValueError("Quantidade solicitada excede o estoque disponível.")
+                request.session["icon"] = "error"
+                request.session["mensagem_header"] = "Opa!"
+                request.session["mensagem"] = "Quantidade solicitada excede o estoque disponível."
+                return RedirectResponse("/carrinho", status_code=303)
 
             # 3. Atualiza a quantidade no carrinho
             sql = """
