@@ -1,4 +1,5 @@
 import os
+import bcrypt
 import pymysql
 import base64
 
@@ -40,7 +41,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -274,17 +275,41 @@ async def salvar_edicao_usuario(
     email: str = Form(...),
     dt_nasc: str = Form(...),
     telefone: str = Form(...),
+    senha_antiga: str = Form(None),
+    senha_nova: str = Form(None),
     db=Depends(get_db)
 ):
     try:
         with db.cursor() as cursor:
-            cursor.execute("""
-                UPDATE Usuario
-                SET Nome = %s, Email = %s, Dt_Nasc = %s, Telefone = %s
-                WHERE Id = %s
-            """, (nome, email, dt_nasc, telefone, usuario_id))
+            cursor.execute("SELECT Senha FROM Usuario WHERE Id = %s", (usuario_id,))
+            resultado = cursor.fetchone()
+
+            if not resultado:
+                return HTMLResponse(content="Usuário não encontrado.", status_code=404)
+
+            senha_atual_hash = resultado[0]
+
+            if senha_nova:
+                if not senha_antiga:
+                    return HTMLResponse("Você precisa informar a senha atual para mudar a senha.", status_code=400)
+                if not verify_password(senha_antiga, senha_atual_hash):
+                    return HTMLResponse("Senha atual incorreta.", status_code=401)
+
+                nova_senha_hash = hash_password(senha_nova)
+                cursor.execute("""
+                    UPDATE Usuario
+                    SET Nome = %s, Email = %s, Dt_Nasc = %s, Telefone = %s, Senha = %s
+                    WHERE Id = %s
+                """, (nome, email, dt_nasc, telefone, nova_senha_hash, usuario_id))
+            else:
+                cursor.execute("""
+                    UPDATE Usuario
+                    SET Nome = %s, Email = %s, Dt_Nasc = %s, Telefone = %s
+                    WHERE Id = %s
+                """, (nome, email, dt_nasc, telefone, usuario_id))
+
             db.commit()
-        return RedirectResponse(url="/usuarios", status_code=302)
+        return RedirectResponse(url="/login", status_code=302)
 
     except Exception as e:
         print("Erro ao editar usuário:", e)
