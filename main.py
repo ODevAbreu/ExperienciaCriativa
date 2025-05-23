@@ -41,7 +41,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -212,9 +212,19 @@ async def cadastrar_usuario(
 ):
     try:
         with db.cursor() as cursor:
-            cursor.execute("SELECT 1 FROM Usuario WHERE Email=%s OR CPF=%s", (email, cpf))
-            if cursor.fetchone():
-                raise HTTPException(status_code=400, detail="Email ou CPF já cadastrados.")
+            # Verifica se o e-mail já está cadastrado
+                        # Verifica e-mail
+            cursor.execute("SELECT 1 FROM Usuario WHERE Email = %s", (email,))
+            email_existe = cursor.fetchone()
+
+            # Verifica CPF
+            cursor.execute("SELECT 1 FROM Usuario WHERE CPF = %s", (cpf,))
+            cpf_existe = cursor.fetchone()
+
+            if email_existe:
+                raise HTTPException(status_code=400, detail="Email já cadastrado.")
+            if cpf_existe:
+                raise HTTPException(status_code=400, detail="CPF já cadastrado.")
             try:
                 data_nascimento = datetime.strptime(dt_nasc, "%Y-%m-%d").date()
             except ValueError:
@@ -225,15 +235,16 @@ async def cadastrar_usuario(
             cursor.execute("""
                 INSERT INTO Usuario (Nome, Email, Senha, Dt_Nasc, Telefone, CPF, ADM)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (nome, email, senha_hash, data_nascimento, telefone, cpf,False))
+            """, (nome, email, senha_hash, data_nascimento, telefone, cpf, False))
             db.commit()
 
-    except HTTPException:     
+    except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+
     return RedirectResponse(url="/login", status_code=303)
 
 
@@ -508,16 +519,29 @@ async def prodatualizar_exe(
     tipo: str = Form(...),
     preco: str = Form(...),
     qtd: str = Form(...),
+    imagem: UploadFile = File(None),  
     db=Depends(get_db)
 ):
     if not request.session.get("user_logged_in"):
         return RedirectResponse(url="/", status_code=303)
+
     try:
+        imagem_bytes = None
+        if imagem:
+            imagem_bytes = await imagem.read()
+
         with db.cursor() as cursor:
-            sql = """UPDATE Produto
-                     SET Nome_Produto=%s, Descr_Produto=%s, Preco_prod=%s, Tipo_prod=%s, Qtn_Produto=%s 
-                     WHERE ID_Produto=%s"""
-            cursor.execute(sql, ( nome, descr, preco, tipo, qtd, id))
+            sql = """
+                UPDATE Produto
+                SET Nome_Produto = %s,
+                    Descr_Produto = %s,
+                    Preco_prod = %s,
+                    Tipo_prod = %s,
+                    Qtn_Produto = %s,
+                    Img_Produto = %s
+                WHERE ID_Produto = %s
+            """
+            cursor.execute(sql, (nome, descr, preco, tipo, qtd, imagem_bytes, id))
             db.commit()
             request.session["mensagem_header"] = "Alterar Produto"
             request.session["mensagem"] = f"Produto alterado com sucesso."
@@ -528,14 +552,12 @@ async def prodatualizar_exe(
     finally:
         db.close()
 
- 
-
     return templates.TemplateResponse("prodatualizar_exe.html", {
         "request": request,
         "mensagem_header": request.session.get("mensagem_header", ""),
         "mensagem": request.session.get("mensagem", ""),
     })
-    
+
 @app.get("/carrinho")
 async def carrinho(
     request: Request,

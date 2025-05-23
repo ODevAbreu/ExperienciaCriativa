@@ -61,6 +61,13 @@
                   <input type="number" id="qtd_prod" value="{{p.Qtn_Produto}}" name="qtd" class="form-control" placeholder="Digite a quantidade do produto em estoque" required/>
                 </div>    
               </div>
+                   <div class="row">
+                <div class="mb-3">
+                  <label class="form-label" for="img_prod">Imagem do Produto</label>
+                  <input type="file" id="img_prod" name="imagem" class="form-control" accept="image/*"/>
+                  <div class="form-text">Selecione uma imagem para o produto (JPEG, PNG, etc.)</div>
+                </div>
+            </div>
               <div class="d-grid mt-4">
                 <input type="hidden" name="id" value="{{p.ID_Produto}}">
                 <button class="btn btn-dark btn-custom" type="submit" id="btnCadastrar">Cadastrar</button>

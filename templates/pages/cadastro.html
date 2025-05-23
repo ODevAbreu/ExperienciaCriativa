@@ -15,7 +15,7 @@
         }
         @media (min-width: 768px) {
           .card-fixed {
-            max-height: 615px;
+            max-height: 616px;
             overflow-y: auto;
         }
       }
@@ -40,7 +40,8 @@
 
             <h1 class="fw-bold text-center mb-4">Cadastro</h1>
 
-            <form method="POST" action="/cadastro" enctype="multipart/form-data">
+            <form id="formCadastro" method="POST" action="/cadastro" enctype="multipart/form-data">
+
               <div class="row">
                 <div class="col-12 col-md-6 mb-3">
                   <label class="form-label" for="nome">Nome Completo</label>
@@ -179,7 +180,7 @@ document.getElementById('toggleConfirmarSenha').addEventListener('click', functi
 });
 
 // Validação completa no botão
-document.getElementById('btnCadastrar').addEventListener('click', function (event) {
+document.getElementById('btnCadastrar').addEventListener('click', async function (event) {
   event.preventDefault();
 
   const nome = document.getElementById('nome').value.trim();
@@ -190,42 +191,36 @@ document.getElementById('btnCadastrar').addEventListener('click', function (even
   const telefone = document.getElementById('telefone').value.trim();
   const data = document.getElementById('data').value;
 
+  // Validações front-end
   if (nome.length < 5) {
-    Swal.fire({ icon: 'error', title: 'Nome inválido!', text: 'O nome deve conter pelo menos 5 caracteres.', confirmButtonColor: '#744321' });
-    return;
+    return Swal.fire({ icon: 'error', title: 'Nome inválido!', text: 'O nome deve conter pelo menos 5 caracteres.', confirmButtonColor: '#744321' });
   }
 
   if (!email.includes('@') || !email.includes('.')) {
-    Swal.fire({ icon: 'error', title: 'E-mail inválido!', text: 'Informe um e-mail válido.', confirmButtonColor: '#744321' });
-    return;
+    return Swal.fire({ icon: 'error', title: 'E-mail inválido!', text: 'Informe um e-mail válido.', confirmButtonColor: '#744321' });
   }
 
   if (!senha.match(/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/)) {
-    Swal.fire({ icon: 'error', title: 'Senha inválida!', text: 'A senha deve conter pelo menos uma letra maiúscula, um número, um caractere especial e 8 caracteres.', confirmButtonColor: '#744321' });
-    return;
+    return Swal.fire({ icon: 'error', title: 'Senha inválida!', text: 'A senha deve conter pelo menos uma letra maiúscula, um número, um caractere especial e 8 caracteres.', confirmButtonColor: '#744321' });
   }
 
   if (senha !== confirmarSenha) {
-    Swal.fire({ icon: 'error', title: 'Senhas diferentes!', text: 'A senha e a confirmação não coincidem.', confirmButtonColor: '#744321' });
-    return;
+    return Swal.fire({ icon: 'error', title: 'Senhas diferentes!', text: 'A senha e a confirmação não coincidem.', confirmButtonColor: '#744321' });
   }
 
   if (!validarCPF(cpf)) {
-    Swal.fire({ icon: 'error', title: 'CPF inválido!', text: 'Digite um CPF válido.', confirmButtonColor: '#744321' });
-    return;
+    return Swal.fire({ icon: 'error', title: 'CPF inválido!', text: 'Digite um CPF válido.', confirmButtonColor: '#744321' });
   }
 
   if (!telefone.match(/\(\d{2}\) \d{4,5}-\d{4}/)) {
-    Swal.fire({ icon: 'error', title: 'Telefone inválido!', text: 'Digite o telefone no formato correto: (xx) xxxx-xxxx ou (xx) xxxxx-xxxx.', confirmButtonColor: '#744321' });
-    return;
+    return Swal.fire({ icon: 'error', title: 'Telefone inválido!', text: 'Digite o telefone no formato correto: (xx) xxxx-xxxx ou (xx) xxxxx-xxxx.', confirmButtonColor: '#744321' });
   }
 
   if (!data) {
-    Swal.fire({ icon: 'error', title: 'Data de nascimento!', text: 'Informe sua data de nascimento.', confirmButtonColor: '#744321' });
-    return;
+    return Swal.fire({ icon: 'error', title: 'Data de nascimento!', text: 'Informe sua data de nascimento.', confirmButtonColor: '#744321' });
   }
 
-  //Maior de idade
+  // Verifica maioridade
   const dataNascimento = new Date(data);
   const hoje = new Date();
   let idade = hoje.getFullYear() - dataNascimento.getFullYear();
@@ -237,23 +232,40 @@ document.getElementById('btnCadastrar').addEventListener('click', function (even
   }
 
   if (idade < 18) {
-    Swal.fire({ 
-      icon: 'error', 
-      title: 'Menor de idade!', 
-      text: 'Você deve ter pelo menos 18 anos para se cadastrar.', 
-      confirmButtonColor: '#744321' 
-    });
-    return;
+    return Swal.fire({ icon: 'error', title: 'Menor de idade!', text: 'Você deve ter pelo menos 18 anos para se cadastrar.', confirmButtonColor: '#744321' });
   }
 
-  Swal.fire({
-    icon: 'success',
-    title: 'Cadastro realizado!',
-    text: 'Seu cadastro foi concluído com sucesso.',
-    confirmButtonColor: '#744321'
-  }).then(() => {
-    document.querySelector('form').submit();
-  });
+  // Envio com fetch
+  try {
+    const formData = new FormData(document.getElementById("formCadastro"));
+    const response = await fetch("/cadastro", {
+      method: "POST",
+      body: formData
+    });
+
+    if (response.status === 400) {
+      const data = await response.json();
+      if (data.detail.includes("Email")) {
+        return Swal.fire({ icon: 'error', title: 'E-mail já cadastrado!', text: 'Já existe um usuário com este e-mail.', confirmButtonColor: '#744321' });
+      }
+      if (data.detail.includes("CPF")) {
+        return Swal.fire({ icon: 'error', title: 'CPF já cadastrado!', text: 'Já existe um usuário com este CPF.', confirmButtonColor: '#744321' });
+      }
+    } else if (response.status === 200 || response.status === 303) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Cadastro realizado!',
+        text: 'Seu cadastro foi concluído com sucesso.',
+        confirmButtonColor: '#744321'
+      }).then(() => {
+        window.location.href = "/login";
+      });
+    } else {
+      Swal.fire({ icon: 'error', title: 'Erro!', text: 'Erro inesperado ao cadastrar. Tente novamente.', confirmButtonColor: '#744321' });
+    }
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'Erro de rede!', text: 'Não foi possível se conectar ao servidor.', confirmButtonColor: '#744321' });
+  }
 });
 
 </script>
