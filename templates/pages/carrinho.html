@@ -62,23 +62,30 @@
 
         <div class="cart-summary p-4 border rounded mt-4 bg-white"
           style="font-family: 'Poppins', sans-serif !important;">
-          <form action="/finalizar/{{id_compra}}" method="post">
+          <form action="/finalizar/{{ id_compra }}" method="post">
             <h2 class="mb-3 text-center">Endereço de Entrega</h2>
 
-            <label>CEP</label>
-            <input type="text" id="cep" name="cep" class="form-control mb-3" required onblur="buscarCep()">
+            {% if enderecos %}
+            <div class="mb-3">
+              <label class="form-label">Selecione um endereço:</label>
+              {% for end in enderecos %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="id_endereco"
+                  id="endereco{{ end.ID_Endereco }}" value="{{ end.ID_Endereco }}" required>
+                <label class="form-check-label" for="endereco{{ end.ID_Endereco }}">
+                  {{ end.Rua }}, {{ end.Numero }} - {{ end.Bairro }}, {{ end.Cidade }} - CEP: {{ end.CEP }}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
 
-            <label>Rua</label>
-            <input type="text" id="rua" name="rua" class="form-control mb-3" required>
-
-            <label>Número de entrega</label>
-            <input type="text" id="num" name="num" class="form-control mb-3" required>
-
-            <label>Bairro</label>
-            <input type="text" id="bairro" name="bairro" class="form-control mb-3" required>
-
-            <label>Cidade</label>
-            <input type="text" id="cidade" name="cidade" class="form-control mb-3" required>
+            <div class="text-end mb-3">
+              <a href="/cadastrar_endereco" class="btn btn-success w-100 mt-3" data-bs-toggle="modal"
+                style="background-color: #624839; color: #f5f5dc;">
+                Cadastrar Novo Endereço
+            </a>
+            </div>
 
             <label>Forma de Pagamento</label>
             <select name="pagamento" class="form-select mb-3">
@@ -87,14 +94,17 @@
               <option value="pix">PIX</option>
               <option value="boleto">Boleto Bancário</option>
             </select>
+
             <div class="cart-total d-flex justify-content-between align-items-center p-3 border rounded bg-light">
               <span class="fw-bold">Total:</span>
-              <span id="cartTotal" class="fw-bold" value="{{total}}">R${{total}}</span>
+              <span id="cartTotal" class="fw-bold">R${{ total }}</span>
             </div>
+
             <button type="submit" class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
               Finalizar Compra
             </button>
           </form>
+
         </div>
       </div>
     </section>
@@ -102,54 +112,19 @@
     {% include 'geral/footer.html' %}
   </div>
   <script>
-function buscarCep() {
-  let cep = document.getElementById("cep").value;
 
-  if (cep.length !== 8) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'CEP inválido',
-      text: 'O CEP deve conter exatamente 8 dígitos.'
-    });
-    return;
-  }
-
-  fetch(`https://viacep.com.br/ws/${cep}/json/`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.erro) {
-        Swal.fire({
-          icon: 'error',
-          title: 'CEP não encontrado',
-          text: 'Verifique se o CEP está correto.'
-        });
-        return;
-      }
-      document.getElementById("rua").value = data.logradouro;
-      document.getElementById("bairro").value = data.bairro;
-      document.getElementById("cidade").value = data.localidade;
-    })
-    .catch(err => {
-      Swal.fire({
-        icon: 'error',
-        title: 'Erro ao buscar o CEP',
-        text: err.message
-      });
-    });
-}
-
-  document.addEventListener("DOMContentLoaded", function () {
-    {% if mensagem %}
+    document.addEventListener("DOMContentLoaded", function () {
+      {% if mensagem %}
       Swal.fire({
         icon: '{{ icon }}',
         title: '{{ mensagem_header }}',
         text: '{{ mensagem }}',
         confirmButtonColor: '#4a3428',
       });
-    {% endif %}
-  });
+      {% endif %}
+    });
 
-</script>
+  </script>
   <!-- <script src="/pages/shop.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

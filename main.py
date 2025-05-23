@@ -41,7 +41,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -252,7 +252,7 @@ async def editar_usuario_form(usuario_id: int, request: Request, db=Depends(get_
             usuario_dict = dict(zip(colunas, usuario))
 
             return templates.TemplateResponse(
-                "editar_usuario.html",            #  <-- seu template do formulário
+                "editar_usuario.html",            # <-- nome do template
                 {
                     "request": request,
                     "usuario": usuario_dict       #  <-- passa os dados
@@ -543,12 +543,15 @@ async def carrinho(
 ):
     mensagem_header = request.session.pop("mensagem_header", None)
     mensagem = request.session.pop("mensagem", None)
+
     if not request.session.get("user_logged_in"):   
         return RedirectResponse(url="/", status_code=303)
+
     id_cliente = request.session.get("Id")
     id_compra = request.session.get("id_compra")
+
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
-        # Consulta SQL unindo Medico e Especialidade, ordenando por nome
+        # Produtos no carrinho
         sql = """
             SELECT
                 p.ID_Produto,
@@ -566,17 +569,31 @@ async def carrinho(
             WHERE 
                 c.ID_Usuario = %s  
                 AND c.ID_Compra = %s
-                AND c.Status = 'aberta';;  
+                AND c.Status = 'aberta';
         """
         cursor.execute(sql, (id_cliente, id_compra))
-        produtos = cursor.fetchall() 
+        produtos = cursor.fetchall()
+
+        # Busca os endereços do cliente
+        sql_endereco = """
+            SELECT 
+                ID_Endereco, Rua, Numero, Cidade, CEP, Bairro
+            FROM 
+                endereco
+            WHERE 
+                fk_ID_Usuario = %s
+        """
+        cursor.execute(sql_endereco, (id_cliente,))
+        enderecos = cursor.fetchall()
+
     return templates.TemplateResponse("carrinho.html", {
         "request": request,
         "produtos": produtos,
         "id_compra": id_compra,
         "mensagem_header": mensagem_header,
         "mensagem": mensagem,
-        "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),	
+        "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),
+        "enderecos": enderecos,  # <- enviando para o template
     })
     
 @app.get("/carrinhoincluir")
@@ -684,7 +701,7 @@ async def atualizar_quantidade(product_id: int, request: Request, qtd: int = For
             # 2. Verifica se a quantidade desejada é maior que o estoque
             if qtd > estoque_disponivel:
                 request.session["icon"] = "error"
-                request.session["mensagem_header"] = "Opa!"
+                request.session["mensagem_header"] = "Erro!"
                 request.session["mensagem"] = "Quantidade solicitada excede o estoque disponível."
                 return RedirectResponse("/carrinho", status_code=303)
 
@@ -707,75 +724,105 @@ async def atualizar_quantidade(product_id: int, request: Request, qtd: int = For
 async def finalizar(
     request: Request,
     id_compra: int,
-    rua: str = Form(...),
-    num: str = Form(...),
-    bairro: str = Form(...),
-    cidade: str = Form(...),
-    cep: str = Form(...),
-    # pagamento: str = Form(...),
+    id_endereco: int = Form(...),
     db=Depends(get_db)
 ):
-    # id_compra_sessao = request.session.get("id_compra")
     print("chamou", id_compra)
     id_cliente = request.session.get("Id")
-    
+
     if not id_cliente:
         return RedirectResponse("/login", status_code=303)
 
     try:
         with db.cursor() as cursor:
-            # Verifica se já há uma compra em aberto
-        
 
-            # if id_compra != id_compra_sessao:
-            #     request.session["mensagem"] = "Não é possível finalizar esta compra."
-            #     return RedirectResponse("/carrinho", status_code=303)
-        
-
-            # Adicionando endereço de entrega
-             
-            
-            sql = """
-                INSERT INTO endereco (Rua, Numero, Cidade, CEP, fk_ID_Compra,Bairro)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(sql,(rua,num,cidade, cep,id_compra,bairro))
-            db.commit()
-            id_endereco = cursor.lastrowid
-            print("Endereço adicionado com ID:", id_endereco)
-
-            # Atualizar a compra com o ID do endereço e mudar o status
-            sql = """
-                UPDATE Compra
+            # Atualizar a compra com o ID do novo endereço e mudar o status
+            sql_update_compra = """
+                UPDATE compra
                 SET Status = 'fechada',
                     ID_Endereco = %s
                 WHERE ID_Compra = %s
             """
-            cursor.execute(sql, (id_endereco, id_compra))
+            cursor.execute(sql_update_compra, (id_endereco, id_compra))
             db.commit()
-            sql = """ 
-                UPDATE Produto
+
+            # Atualizar o estoque dos produtos
+            sql_update_estoque = """ 
+                UPDATE produto
                 SET Qtn_Produto = Qtn_Produto - (
-                    SELECT SUM(Qtn_Produto) FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s
+                    SELECT SUM(Qtn_Produto)
+                    FROM qtd_produto
+                    WHERE fk_Compra_ID_Compra = %s
                 )
                 WHERE ID_Produto IN (
-                    SELECT fk_Produto_ID_Produto FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s
+                    SELECT fk_Produto_ID_Produto
+                    FROM qtd_produto
+                    WHERE fk_Compra_ID_Compra = %s
                 )
-            """ # sql para atualizar o estoque 
-            cursor.execute(sql, (id_compra, id_compra))
+            """
+            cursor.execute(sql_update_estoque, (id_compra, id_compra))
             db.commit()
-            # Finaliza a compra
+
+            # Finalizar sessão da compra
             request.session["id_compra"] = None
             request.session["mensagem_header"] = "Compra finalizada"
             request.session["mensagem"] = "Compra finalizada com sucesso!"
             return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
-        request.session["mensagem"] = f"Erro ao remover produto: {str(e)}"
+        request.session["mensagem_header"] = "Erro"
+        request.session["mensagem"] = f"Erro ao finalizar a compra: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
     finally:
         db.close()
+@app.post("/cadastrar_endereco_exe")
+async def finalizar(
+    request: Request,
+    rua: str = Form(...),
+    num: str = Form(...),
+    bairro: str = Form(...),
+    cidade: str = Form(...),
+    cep: str = Form(...),
+    db=Depends(get_db)
+):
+    id_cliente = request.session.get("Id")
+
+    if not id_cliente:
+        return RedirectResponse("/login", status_code=303)
+
+    try:
+        with db.cursor() as cursor:
+            # Inserir novo endereço vinculado ao usuário
+            sql_insert_endereco = """
+                INSERT INTO endereco (Rua, Numero, Cidade, CEP, Bairro, fk_ID_Usuario)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_insert_endereco, (rua, num, cidade, cep, bairro, id_cliente))
+            db.commit()
+            id_endereco = cursor.lastrowid
+            print("Endereço adicionado com ID:", id_endereco)
+            
+            request.session["mensagem_header"] = "Endereço cadastrado"
+            request.session["mensagem"] = "Endereço cadastrado com sucesso!"
+            return RedirectResponse("/carrinho", status_code=303)
+    except Exception as e:
+        request.session["mensagem_header"] = "Erro"
+        request.session["mensagem"] = f"Erro ao cadastrar endereço: {str(e)}"
+        return RedirectResponse("/carrinho", status_code=303)
+
+    finally:
+        db.close()
+
+@app.get("/cadastrar_endereco")
+async def incluirproduto(
+    request: Request
+):
+    #return RedirectResponse(url="/login.html", status_code=303)
+    return templates.TemplateResponse("enderecoIncluir.html", {
+        "request": request,
+    })
+
 
 @app.post("/reset_session")
 async def reset_session(request: Request):
