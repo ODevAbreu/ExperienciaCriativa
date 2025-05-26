@@ -70,11 +70,14 @@
               <label class="form-label">Selecione um endereço:</label>
               {% for end in enderecos %}
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="id_endereco"
-                  id="endereco{{ end.ID_Endereco }}" value="{{ end.ID_Endereco }}" required>
+                <input class="form-check-input" type="radio" name="id_endereco" id="endereco{{ end.ID_Endereco }}"
+                  value="{{ end.ID_Endereco }}" required>
                 <label class="form-check-label" for="endereco{{ end.ID_Endereco }}">
                   {{ end.Rua }}, {{ end.Numero }} - {{ end.Bairro }}, {{ end.Cidade }} - CEP: {{ end.CEP }}
                 </label>
+                <a href="/editar_endereco/{{ end.ID_Endereco }}" class="btn btn-link text-decoration-none">Editar</a>
+                <a onclick="ConfirmarExclusao( {{ end.ID_Endereco }} )"
+                  class="btn btn-link text-decoration-none text-danger">Remover</a>
               </div>
               {% endfor %}
             </div>
@@ -84,7 +87,7 @@
               <a href="/cadastrar_endereco" class="btn btn-success w-100 mt-3" data-bs-toggle="modal"
                 style="background-color: #624839; color: #f5f5dc;">
                 Cadastrar Novo Endereço
-            </a>
+              </a>
             </div>
 
             <label>Forma de Pagamento</label>
@@ -112,7 +115,22 @@
     {% include 'geral/footer.html' %}
   </div>
   <script>
-
+    function ConfirmarExclusao(id) {
+      Swal.fire({
+        title: "Tem certeza?",
+        text: "Esta ação não poderá ser desfeita!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Sim, excluir!",
+        cancelButtonText: "Cancelar"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = `./endereco_excluir/${id}`;
+        }
+      });
+    }
     document.addEventListener("DOMContentLoaded", function () {
       {% if mensagem %}
       Swal.fire({

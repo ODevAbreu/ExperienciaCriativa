@@ -41,7 +41,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -436,15 +436,24 @@ async def listar_prod(
 
         produtos_carrinho_ids = set()
         id_compra = request.session.get("id_compra")
+
         if id_compra:
-            cursor.execute("""
-                SELECT fk_Produto_ID_Produto FROM QTD_Produto
-                WHERE fk_Compra_ID_Compra = %s
-            """, (id_compra,))
-            produtos_carrinho = cursor.fetchall()  
-            produtos_carrinho_ids = {item['fk_Produto_ID_Produto'] for item in produtos_carrinho}
-        for prod in produtos:
-            prod["no_carrinho"] = prod["ID_Produto"] in produtos_carrinho_ids
+        # Verifica se a compra ainda está aberta
+            cursor.execute("SELECT status FROM Compra WHERE ID_Compra = %s", (id_compra,))
+            compra = cursor.fetchone()
+
+            if compra and compra["status"] == "aberta":
+                # Se a compra estiver aberta, busca os produtos no carrinho
+                cursor.execute("""
+                    SELECT fk_Produto_ID_Produto FROM QTD_Produto
+                    WHERE fk_Compra_ID_Compra = %s
+                """, (id_compra,))
+                produtos_carrinho = cursor.fetchall()
+                produtos_carrinho_ids = {item['fk_Produto_ID_Produto'] for item in produtos_carrinho}
+
+    # Marca no_carrinho como True ou False com base no filtro acima
+    for prod in produtos:
+        prod["no_carrinho"] = prod["ID_Produto"] in produtos_carrinho_ids
             
 
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -749,12 +758,16 @@ async def finalizar(
     id_endereco: int = Form(...),
     db=Depends(get_db)
 ):
-    print("chamou", id_compra)
     id_cliente = request.session.get("Id")
 
     if not id_cliente:
         return RedirectResponse("/login", status_code=303)
 
+    if not id_endereco:
+        request.session["mensagem_header"] = "Erro"
+        request.session["mensagem"] = "Selecione um endereço para finalizar a compra."
+        return RedirectResponse("/carrinho", status_code=303)
+    
     try:
         with db.cursor() as cursor:
 
@@ -799,7 +812,7 @@ async def finalizar(
     finally:
         db.close()
 @app.post("/cadastrar_endereco_exe")
-async def finalizar(
+async def cadastrar_endereco_exe(
     request: Request,
     rua: str = Form(...),
     num: str = Form(...),
@@ -844,6 +857,105 @@ async def incluirproduto(
     return templates.TemplateResponse("enderecoIncluir.html", {
         "request": request,
     })
+@app.get("/editar_endereco/{id_endereco}")
+async def editar_endereco(
+    request: Request,
+    id_endereco: int,
+    db=Depends(get_db)
+):
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
+    id_cliente = request.session.get("Id")
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM endereco WHERE ID_Endereco = %s AND fk_ID_Usuario = %s", (id_endereco,id_cliente))
+            endereco = cursor.fetchone()
+
+            if not endereco:
+                return HTMLResponse("Endereço não encontrado", status_code=404)
+
+            return templates.TemplateResponse("enderecoatualizar.html", {
+                "request": request,
+                "endereco": endereco
+            })
+
+    except Exception as e:
+        print("Erro ao buscar endereço:", e)
+        return HTMLResponse("Erro ao carregar endereço.", status_code=500)
+    finally:
+        db.close()
+        
+@app.post("/editar_endereco_exe/{id_endereco}")
+async def editar_endereco_exe(
+    id_endereco: int,
+    request: Request,
+    rua: str = Form(...),
+    num: str = Form(...),
+    bairro: str = Form(...),
+    cidade: str = Form(...),
+    cep: str = Form(...),
+    db=Depends(get_db)
+):
+    id_cliente = request.session.get("Id")
+
+    if not id_cliente:
+        return RedirectResponse("/login", status_code=303)
+
+    try:
+        with db.cursor() as cursor:
+            # Atualiza o endereço apenas se ele pertencer ao usuário logado
+            sql = """
+                UPDATE endereco
+                SET Rua = %s, Numero = %s, Cidade = %s, CEP = %s, Bairro = %s
+                WHERE ID_Endereco = %s AND fk_ID_Usuario = %s
+            """
+            cursor.execute(sql, (rua, num, cidade, cep, bairro, id_endereco, id_cliente))
+            db.commit()
+
+            request.session["mensagem_header"] = "Endereço atualizado"
+            request.session["mensagem"] = "Endereço atualizado com sucesso!"
+            return RedirectResponse("/carrinho", status_code=303)
+
+    except Exception as e:
+        request.session["mensagem_header"] = "Erro"
+        request.session["mensagem"] = f"Erro ao atualizar endereço: {str(e)}"
+        return RedirectResponse("/carrinho", status_code=303)
+
+    finally:
+        db.close()
+
+@app.get("/endereco_excluir/{id_endereco}")
+async def endereco_excluir(
+    id_endereco: int,
+    request: Request,
+    db=Depends(get_db)
+):
+    id_cliente = request.session.get("Id")
+
+    if not id_cliente:
+        return RedirectResponse("/login", status_code=303)
+
+    try:
+        with db.cursor() as cursor:
+            sql = """
+                DELETE FROM endereco
+                WHERE ID_Endereco = %s AND fk_ID_Usuario = %s
+            """
+            cursor.execute(sql, (id_endereco, id_cliente))
+            db.commit()
+
+            request.session["mensagem_header"] = "Endereço removido"
+            request.session["mensagem"] = "Endereço excluído com sucesso!"
+            return RedirectResponse("/carrinho", status_code=303)
+
+    except Exception as e:
+        request.session["mensagem_header"] = "Erro"
+        request.session["mensagem"] = f"Erro ao excluir endereço: {str(e)}"
+        return RedirectResponse("/carrinho", status_code=303)
+
+    finally:
+        db.close()
+
 
 
 @app.post("/reset_session")
