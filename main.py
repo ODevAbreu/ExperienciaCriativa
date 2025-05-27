@@ -616,7 +616,7 @@ async def carrinho(
         """
         cursor.execute(sql_endereco, (id_cliente,))
         enderecos = cursor.fetchall()
-
+        tem_endereco = len(enderecos) > 0
     return templates.TemplateResponse("carrinho.html", {
         "request": request,
         "produtos": produtos,
@@ -624,7 +624,8 @@ async def carrinho(
         "mensagem_header": mensagem_header,
         "mensagem": mensagem,
         "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),
-        "enderecos": enderecos,  # <- enviando para o template
+        "enderecos": enderecos,  
+        "tem_endereco": tem_endereco 
     })
     
 @app.get("/carrinhoincluir")

@@ -102,10 +102,15 @@
               <span class="fw-bold">Total:</span>
               <span id="cartTotal" class="fw-bold">R${{ total }}</span>
             </div>
-
-            <button type="submit" class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
-              Finalizar Compra
-            </button>
+            {% if enderecos %}
+              <button type="submit" class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
+                Finalizar Compra
+              </button>
+            {% else %}
+              <button type="button" disabled class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
+               Cadastre um endereço para finalizar a compra
+              </button>
+            {% endif %}
           </form>
 
         </div>
