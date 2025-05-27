@@ -34,6 +34,7 @@ CREATE TABLE compra (
   Status VARCHAR(20) DEFAULT 'aberta',
   FOREIGN KEY (ID_Usuario) REFERENCES usuario(Id) ON DELETE CASCADE,
   FOREIGN KEY (ID_Endereco) REFERENCES endereco(ID_Endereco) ON DELETE SET NULL
+  Data_Compra DATETIME NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabela produto

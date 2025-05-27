@@ -41,7 +41,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -114,19 +114,65 @@ async def incluirproduto(
     })
 
 @app.get("/usuarios/{usuario_id}", response_class=HTMLResponse)
-async def listar_usuarios(usuario_id:int, request: Request, db = Depends(get_db)):
+async def listar_usuarios(usuario_id: int, request: Request, db = Depends(get_db)):
     try:
-        with db.cursor() as cursor:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Buscar informações do usuário
             cursor.execute("SELECT * FROM Usuario WHERE ID = %s", (usuario_id,))
-            columns = [col[0] for col in cursor.description]
-            usuarios = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            return templates.TemplateResponse("listar_usuarios.html", {"request": request, "usuarios": usuarios})
+            usuarios = cursor.fetchall()
+            
+            if not usuarios:
+                return HTMLResponse(content="Usuário não encontrado", status_code=404)
+                
+            usuario = usuarios[0]  # Pega o primeiro usuário
+            
+            # Buscar compras do usuário com detalhes de endereço
+            cursor.execute("""
+                SELECT
+                    c.ID_Compra,
+                    c.Data_Compra,
+                    c.Status,
+                    e.Rua,
+                    e.Numero,
+                    e.Bairro,
+                    e.Cidade,
+                    e.CEP
+                FROM Compra c
+                LEFT JOIN Endereco e ON c.ID_Endereco = e.ID_Endereco
+                WHERE c.ID_Usuario = %s AND c.Status = 'fechada'
+                ORDER BY c.Data_Compra DESC
+            """, (usuario_id,))
+            compras = cursor.fetchall()
+
+            # Para cada compra, busca os produtos comprados
+            for compra in compras:
+                cursor.execute("""
+                    SELECT 
+                        p.Nome_Produto,
+                        p.Preco_prod,
+                        qp.Qtn_Produto,
+                        (p.Preco_prod * qp.Qtn_Produto) as Subtotal
+                    FROM QTD_Produto qp
+                    JOIN Produto p ON p.ID_Produto = qp.fk_Produto_ID_Produto
+                    WHERE qp.fk_Compra_ID_Compra = %s
+                """, (compra["ID_Compra"],))
+                compra["produtos"] = cursor.fetchall()
+                
+                # Calcula o total da compra
+                compra["total"] = sum(item["Subtotal"] for item in compra["produtos"])
+
+        return templates.TemplateResponse("listar_usuarios.html", {
+            "request": request,
+            "usuarios": usuarios,
+            "compras": compras,
+            "single_user_view": True
+        })
+            
     except Exception as e:
         print("Erro ao recuperar usuários:", e)
-        return HTMLResponse(content="Erro ao carregar a lista de usuários.", status_code=500)
+        return HTMLResponse(content=f"Erro ao carregar dados do usuário: {str(e)}", status_code=500)
     finally:
         db.close()
-
 
 
 @app.get("/deletar_usuario/{usuario_id}")
@@ -771,15 +817,17 @@ async def finalizar(
     
     try:
         with db.cursor() as cursor:
+            data_atual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            # Atualizar a compra com o ID do novo endereço e mudar o status
+            # Atualizar a compra com o ID do endereço, status e data da compra
             sql_update_compra = """
                 UPDATE compra
                 SET Status = 'fechada',
-                    ID_Endereco = %s
+                    ID_Endereco = %s,
+                    Data_Compra = %s
                 WHERE ID_Compra = %s
             """
-            cursor.execute(sql_update_compra, (id_endereco, id_compra))
+            cursor.execute(sql_update_compra, (id_endereco, data_atual, id_compra))
             db.commit()
 
             # Atualizar o estoque dos produtos

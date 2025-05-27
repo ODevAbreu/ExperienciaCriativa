@@ -11,7 +11,11 @@
     text-align: center;
     margin-bottom: 40px;
   ">
-    Usuários Cadastrados
+    {% if single_user_view %}
+      Perfil do Usuário
+    {% else %}
+      Usuários Cadastrados
+    {% endif %}
   </h1>
   <body style="background-color: #694940;"> 
 
@@ -44,14 +48,72 @@
             style="background-color: #d32f2f; color: #fff;"
             onclick="return confirm('Tem certeza que deseja deletar este usuário?');">
             🗑️ Deletar
-         </a>
-         
-            
-            
+            </a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+  {# Seção para mostrar as compras (apenas na visualização individual) #}
+  {% if single_user_view and compras %}
+  <div style="margin-top: 40px;">
+    <h2 style="
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: #3E2723;
+      text-align: center;
+      margin-bottom: 30px;
+    ">
+      Histórico de Compras
+    </h2>
+    
+    {% for compra in compras %}
+    <div style="margin-bottom: 30px; background-color: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+        <div>
+          <strong>Compra #{{ compra.ID_Compra }}</strong><br>
+          Data: {{ compra.Data_Compra }}<br>
+          Status: {{ compra.Status }}
+        </div>
+        <div style="text-align: right;">
+          <strong>Endereço de entrega:</strong><br>
+          {{ compra.Rua }}, {{ compra.Numero }}<br>
+          {{ compra.Bairro }} - {{ compra.Cidade }}<br>
+          CEP: {{ compra.CEP }}
+        </div>
+      </div>
+      
+      <table class="table" style="width: 100%; margin-bottom: 15px;">
+        <thead style="background-color: #502e24; color: #fff;">
+          <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Preço Unitário</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for produto in compra.produtos %}
+          <tr>
+            <td>{{ produto.Nome_Produto }}</td>
+            <td>{{ produto.Qtn_Produto }}</td>
+            <td>R$ {{ "%.2f"|format(produto.Preco_prod) }}</td>
+            <td>R$ {{ "%.2f"|format(produto.Subtotal) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="font-weight: bold; background-color: #f5f5f5;">
+            <td colspan="3" style="text-align: right;">Total:</td>
+            <td>R$ {{ "%.2f"|format(compra.total) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
