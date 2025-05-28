@@ -41,7 +41,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -174,21 +174,35 @@ async def listar_usuarios(usuario_id: int, request: Request, db = Depends(get_db
     finally:
         db.close()
 
-
-@app.get("/deletar_usuario/{usuario_id}")
-async def deletar_usuario(usuario_id: int, db=Depends(get_db)):
+@app.get("/deletar_usuario/{usuario_id}", name="deletar_usuario")
+async def deletar_usuario(request: Request, usuario_id: int, db=Depends(get_db)):
     try:
-        with db.cursor() as cursor:
+        with db.cursor() as cursor: 
             cursor.execute("DELETE FROM Usuario WHERE ID = %s", (usuario_id,))
             db.commit()
-        return RedirectResponse(url="/usuarios", status_code=status.HTTP_302_FOUND)
+        
+        request.session["icon"] = "success" 
+        request.session["mensagem_header"] = "Sucesso!"
+        request.session["mensagem"] = "Usuário deletado com sucesso."
+        
+        return RedirectResponse(url="/index", status_code=status.HTTP_302_FOUND)
+    except pymysql.Error as db_err: 
+        print(f"Erro de banco de dados ao deletar usuário: {db_err}")
+        request.session["icon"] = "error"
+        request.session["mensagem_header"] = "Erro de Banco de Dados!"
+        request.session["mensagem"] = "Não foi possível deletar o usuário devido a um problema no banco de dados."
+        referer_url = request.headers.get("referer", "/index") 
+        return RedirectResponse(url=referer_url, status_code=status.HTTP_302_FOUND)
     except Exception as e:
-        print("Erro ao deletar usuário:", e)
-        return HTMLResponse(content="Erro ao deletar o usuário.", status_code=500)
+        print(f"Erro geral ao deletar usuário: {e}")
+        request.session["icon"] = "error"
+        request.session["mensagem_header"] = "Erro!"
+        request.session["mensagem"] = f"Não foi possível deletar o usuário. Detalhes: {str(e)}"
+        referer_url = request.headers.get("referer", "/index")
+        return RedirectResponse(url=referer_url, status_code=status.HTTP_302_FOUND)
     finally:
-        db.close()
-
-
+        if db: 
+            db.close()
 
 @app.post("/login")
 async def login(

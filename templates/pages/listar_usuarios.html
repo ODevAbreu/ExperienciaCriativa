@@ -43,11 +43,11 @@
             <a href="/editar_usuario/{{ usuario.Id }}" class="btn btn-sm" style="background-color: #795548; color: #fff; margin-right: 6px;">
               ✏️ Editar
             </a> 
-            <a href="/deletar_usuario/{{ usuario.Id }}"
-            class="btn btn-sm"
-            style="background-color: #d32f2f; color: #fff;"
-            onclick="return confirm('Tem certeza que deseja deletar este usuário?');">
-            🗑️ Deletar
+            <a href="javascript:void(0);"
+               class="btn btn-sm"
+               style="background-color: #d32f2f; color: #fff;"
+               onclick="confirmDeleteUser('{{ url_for('deletar_usuario', usuario_id=usuario.Id) }}', '{{ usuario.Nome | e }}')">
+               🗑️ Deletar
             </a>
           </td>
         </tr>
@@ -117,4 +117,26 @@
   </div>
   {% endif %}
 </div>
+
+{# Adicione a função customizada aqui ou em um arquivo JS global carregado no base.html #}
+{# Se a função já estiver em um arquivo .js global carregado pelo base.html, não precisa repetir aqui #}
+<script>
+function confirmDeleteUser(deleteUrl, userName) {
+    Swal.fire({
+        title: 'Tem certeza?',
+        html: `Você realmente deseja deletar o usuário "<b>${userName}</b>"?<br>Esta ação não poderá ser desfeita!`, // Usando html para negrito
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d32f2f',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, deletar!',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = deleteUrl;
+        }
+    });
+}
+</script>
+
 {% endblock %}

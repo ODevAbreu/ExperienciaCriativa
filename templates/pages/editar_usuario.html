@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Usuário ‑ Coffee or Nothing{% endblock %}
+{% block title %}Editar Usuário ‑ Coffee&nbsp;or&nbsp;Nothing{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="/static/css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
 <body style="background-color:#694940;">
-  <section class="vh-100 d-flex justify-content-center align-items-center">
+  <section class="vh-100 d-flex justify-content-center align-items-center" style="padding-top: 75px;">
     <div class="container">
       <div class="row d-flex justify-content-center">
         <div class="col-md-12 col-lg-9">
@@ -14,11 +17,9 @@
 
               <h1 class="fw-bold text-center mb-4">Editar Usuário</h1>
 
-              <!-- ID vem de usuario.ID -->
-              <form method="POST" action="/editar_usuario/{{ usuario.Id }}">
+              <form method="POST" action="/editar_usuario/{{ usuario.Id }}" id="editUserForm">
                 <div class="row">
 
-                  <!-- Nome -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="nome">Nome Completo</label>
                     <input
@@ -27,12 +28,12 @@
                       name="nome"
                       class="form-control"
                       placeholder="Ex.: Logan Borges"
+                      minlength="5"
                       value="{{ usuario.Nome }}"
                       required
                     />
                   </div>
 
-                  <!-- E‑mail -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="email">E‑mail</label>
                     <input
@@ -41,15 +42,16 @@
                       name="email"
                       class="form-control"
                       value="{{ usuario.Email }}"
-                      required
+                      required placeholder="seuemail@gmail.com"
                     />
-                  </div>
+                  </div> 
 
-                  <!-- Telefone -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="telefone">Número de telefone</label>
                     <input
-                      onkeydown="return mascaraTelefone(event)"
+                      oninput="mascaraTelefone(event)"
+                      maxlength="15" 
+                      placeholder="(xx) xxxxx-xxxx"
                       type="text"
                       id="telefone"
                       name="telefone"
@@ -59,7 +61,6 @@
                     />
                   </div>
 
-                  <!-- Data de nascimento -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="dt_nasc">Data de Nascimento</label>
                     <input
@@ -72,38 +73,63 @@
                     />
                   </div>
 
-                  <!-- Senha Antiga -->
                   <div class="col-12 col-md-6 mb-3">
                     <label class="form-label" for="senha_antiga">Senha Atual</label>
-                    <input
-                      type="password"
-                      id="senha_antiga"
-                      name="senha_antiga"
-                      class="form-control"
-                      placeholder="Digite sua senha atual"
-                    />
+                    <div class="input-group">
+                        <input
+                          type="password"
+                          id="senha_antiga"
+                          name="senha_antiga"
+                          class="form-control"
+                          placeholder="Digite sua senha atual"
+                          pattern="^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$" 
+                          title="Deve conter pelo menos uma letra maiúscula, um número, um caractere especial e no mínimo 8 caracteres"
+                        />
+                        <button class="btn btn-outline-secondary" type="button" id="toggleSenhaAntiga">
+                          <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                   </div>
-
-                  <!-- Senha Nova -->
-                  <div class="col-12 col-md-6 mb-3">
-                    <label class="form-label" for="senha_nova">Nova Senha</label>
-                    <input
-                      type="password"
-                      id="senha_nova"
-                      name="senha_nova"
-                      class="form-control"
-                      placeholder="Nova senha (deixe em branco se não for mudar)"
-                    />
+                  
+                  <div class="col-12 col-md-6">
+                    <div class="mb-3"> <label class="form-label" for="senha_nova">Nova Senha</label>
+                        <div class="input-group">
+                            <input
+                              type="password"
+                              id="senha_nova"
+                              name="senha_nova"
+                              class="form-control"
+                              placeholder="Nova senha (deixe em branco se não for mudar)"
+                              pattern="^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$"
+                              title="Deve conter pelo menos uma letra maiúscula, um número, um caractere especial e no mínimo 8 caracteres. Deixe em branco se não quiser alterar."
+                            />
+                            <button class="btn btn-outline-secondary" type="button" id="toggleSenhaNova">
+                              <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="divConfirmarSenhaNova" style="display: none;"> <label class="form-label" for="confirmar_senha_nova">Confirmar Nova Senha</label>
+                        <div class="input-group">
+                            <input
+                              type="password"
+                              id="confirmar_senha_nova"
+                              name="confirmar_senha_nova"
+                              class="form-control"
+                              placeholder="Confirme a nova senha"
+                            />
+                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmarSenhaNova">
+                              <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
                   </div>
+                </div>
 
-
-                
-
-                  <div class="d-grid mt-4">
-                    <button class="btn btn-dark btn-custom" type="submit">
-                      Salvar Alterações
-                    </button>
-                  </div>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                  <a href="javascript:history.back()" class="btn btn-outline-secondary">Voltar</a>
+                  <button class="btn btn-dark btn-custom" type="button" id="btnSalvarAlteracoes">
+                    Salvar Alterações
+                  </button>
                 </div>
               </form>
 
@@ -113,4 +139,160 @@
       </div>
     </div>
   </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    function mascaraTelefone(event) {
+      let input = event.target;
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 11) value = value.slice(0, 11);
+      let formattedValue = "";
+      if (value.length === 0) formattedValue = "";
+      else if (value.length <= 2) formattedValue = `(${value}`;
+      else if (value.length <= 6) formattedValue = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+      else if (value.length <= 10) formattedValue = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6, 10)}`;
+      else formattedValue = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`;
+      input.value = formattedValue;
+    }
+
+    const hojeDtMax = new Date();
+    const limiteMenorIdade = new Date(hojeDtMax.getFullYear() - 18, hojeDtMax.getMonth(), hojeDtMax.getDate());
+    document.getElementById('dt_nasc').setAttribute('max', limiteMenorIdade.toISOString().split('T')[0]);
+
+    // --- Toggle de visibilidade de senhas ---
+    function setupToggle(buttonId, inputId) {
+        const button = document.getElementById(buttonId);
+        const input = document.getElementById(inputId);
+        if (button && input) {
+            button.addEventListener('click', function () {
+                const icon = this.querySelector('i');
+                input.type = input.type === 'password' ? 'text' : 'password';
+                icon.classList.toggle('bi-eye');
+                icon.classList.toggle('bi-eye-slash');
+            });
+        }
+    }
+    setupToggle('toggleSenhaAntiga', 'senha_antiga');
+    setupToggle('toggleSenhaNova', 'senha_nova');
+    setupToggle('toggleConfirmarSenhaNova', 'confirmar_senha_nova');
+
+    // --- Lógica para mostrar/ocultar campo de confirmar senha ---
+    const senhaNovaInput = document.getElementById('senha_nova');
+    const divConfirmarSenhaNova = document.getElementById('divConfirmarSenhaNova');
+    const confirmarSenhaNovaInput = document.getElementById('confirmar_senha_nova');
+
+    if (senhaNovaInput && divConfirmarSenhaNova && confirmarSenhaNovaInput) {
+        senhaNovaInput.addEventListener('input', function() {
+          if (this.value.length > 0) {
+            divConfirmarSenhaNova.style.display = 'block';
+          } else {
+            divConfirmarSenhaNova.style.display = 'none';
+            confirmarSenhaNovaInput.value = ''; // Limpa a confirmação se a nova senha for apagada
+          }
+        });
+        // Verifica no carregamento da página caso o campo senha_nova já venha preenchido (improvável neste form, mas bom ter)
+        if (senhaNovaInput.value.length > 0) {
+             divConfirmarSenhaNova.style.display = 'block';
+        }
+    }
+
+
+    // --- Validação completa no botão ---
+    document.getElementById('btnSalvarAlteracoes').addEventListener('click', async function (event) {
+      event.preventDefault(); 
+
+      const form = document.getElementById('editUserForm');
+      const nome = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const telefone = document.getElementById('telefone').value.trim();
+      const dt_nasc = document.getElementById('dt_nasc').value;
+      const senha_antiga = document.getElementById('senha_antiga').value;
+      const senha_nova = document.getElementById('senha_nova').value;
+      const confirmar_senha_nova = document.getElementById('confirmar_senha_nova').value;
+
+      const nomeRegex = /^[A-Za-zÀ-ÖØ-öø-ÿçÇÜü\s']{5,}$/;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      const telefoneRegex = /^\(\d{2}\) \d{4,5}-\d{4}$/;
+      const senhaRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+      if (!nomeRegex.test(nome)) {
+        return Swal.fire({ icon: 'error', title: 'Nome inválido!', text: 'O nome deve conter pelo menos 5 caracteres (letras, espaços, acentos).', confirmButtonColor: '#744321' });
+      }
+      if (!emailRegex.test(email)) {
+        return Swal.fire({ icon: 'error', title: 'E-mail inválido!', text: 'Informe um e-mail válido (ex: seuemail@dominio.com).', confirmButtonColor: '#744321' });
+      }
+      if (!telefoneRegex.test(telefone)) {
+        return Swal.fire({ icon: 'error', title: 'Telefone inválido!', text: 'Formato: (xx) xxxx-xxxx ou (xx) xxxxx-xxxx.', confirmButtonColor: '#744321' });
+      }
+      if (!dt_nasc) {
+        return Swal.fire({ icon: 'error', title: 'Data de nascimento inválida!', text: 'Informe sua data de nascimento.', confirmButtonColor: '#744321' });
+      }
+
+      const dataNascimento = new Date(dt_nasc);
+      const hoje = new Date();
+      let idade = hoje.getFullYear() - dataNascimento.getFullYear();
+      const mesAniversario = dataNascimento.getMonth();
+      const diaAniversario = dataNascimento.getDate();
+      const mesAtual = hoje.getMonth();
+      const diaAtual = hoje.getDate();
+      if (mesAtual < mesAniversario || (mesAtual === mesAniversario && diaAtual < diaAniversario)) {
+        idade--;
+      }
+      if (idade < 18) {
+        return Swal.fire({ icon: 'error', title: 'Menor de idade!', text: 'Você deve ter pelo menos 18 anos.', confirmButtonColor: '#744321' });
+      }
+
+      // Validação de Senhas
+      if (senha_nova.length > 0) { // Se o usuário está tentando definir uma nova senha
+        if (senha_antiga.length === 0) {
+          return Swal.fire({ icon: 'error', title: 'Senha Atual Necessária!', text: 'Informe sua senha atual para definir uma nova.', confirmButtonColor: '#744321' });
+        }
+        if (!senha_antiga.match(senhaRegex)) {
+             return Swal.fire({ icon: 'error', title: 'Formato da Senha Atual Inválido!', text: 'A senha atual deve ter maiúscula, número, caractere especial e min. 8 caracteres.', confirmButtonColor: '#744321' });
+        }
+        if (!senha_nova.match(senhaRegex)) {
+          return Swal.fire({ icon: 'error', title: 'Nova Senha Inválida!', text: 'A nova senha deve ter maiúscula, número, caractere especial e min. 8 caracteres.', confirmButtonColor: '#744321' });
+        }
+        if (confirmar_senha_nova.length === 0) {
+          return Swal.fire({ icon: 'error', title: 'Confirmação de Senha!', text: 'Por favor, confirme sua nova senha.', confirmButtonColor: '#744321' });
+        }
+        if (senha_nova !== confirmar_senha_nova) {
+          return Swal.fire({ icon: 'error', title: 'Senhas Não Coincidem!', text: 'A nova senha e a confirmação não são iguais.', confirmButtonColor: '#744321' });
+        }
+      } else { // Nova senha está vazia, usuário não quer mudar a senha.
+        // Se a nova senha estiver vazia, o campo de confirmação também deve estar (a lógica de input deve garantir isso).
+        // A senha antiga só é validada pelo pattern se algo for digitado nela.
+        if (senha_antiga.length > 0 && !senha_antiga.match(senhaRegex)) {
+            return Swal.fire({ icon: 'error', title: 'Formato da Senha Atual Inválido!', text: 'Se preencheu a senha atual, ela deve seguir o padrão (maiúscula, número, especial, min. 8). Se não deseja alterar a senha, deixe os campos de senha em branco.', confirmButtonColor: '#744321' });
+        }
+        // Garante que, se a nova senha for limpa, a confirmação também seja limpa antes de submeter
+        if (confirmar_senha_nova.length > 0) {
+             document.getElementById('confirmar_senha_nova').value = '';
+        }
+      }
+
+      Swal.fire({
+        title: 'Confirmar Alterações',
+        text: "Tem certeza de que deseja salvar as alterações?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#744321',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sim, salvar!',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+              title: 'Salvando...',
+              text: 'Suas alterações estão sendo processadas.',
+              allowOutsideClick: false,
+              didOpen: () => { Swal.showLoading(); }
+          });
+          setTimeout(() => { form.submit(); }, 1500); 
+        }
+      });
+    });
+  </script>
+
+</body>
 {% endblock %}
