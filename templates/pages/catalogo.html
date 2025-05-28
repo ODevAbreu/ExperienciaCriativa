@@ -78,25 +78,29 @@
     <div class="card-deck">
       {% for prod in produtos %}
       <div class="card" style="width: 18rem; ">
+          {% if prod.Qtn_Produto <= 0 and request.session.get("ADM")%}
+            <p class="btn btn-primary">Produto Indisponivel</a>
+          {% endif %}
         <img class="card-img-top" src="/imagem_produto/{{prod.ID_Produto}}" alt="imagem do produto" width="150">
         <div class="card-body">
           <h5 class="card-title">{{prod.Nome_Produto}}</h5>
           <p class="card-text">{{prod.Descr_Produto}}</p>
           <div class="d-flex justify-content-between align-items-center">
             <a>R${{prod.Preco_prod}}</a>
-
             {% if request.session.get("user_logged_in") and request.session.get("ADM")%}
-            <a href="./prodatualizar?id={{prod.ID_Produto}}" class="btn btn-primary">Alterar</a>
-            <a class="btn btn-primary" onclick="ConfirmarExclusao( {{ prod.ID_Produto }} )">Excluir</a>
-
+              <a href="./prodatualizar?id={{prod.ID_Produto}}" class="btn btn-primary">Alterar</a>
+              <a class="btn btn-primary" onclick="ConfirmarExclusao( {{ prod.ID_Produto }} )">Excluir</a>
             {% else %}
-
             {% if request.session.get("user_logged_in") %}
-            {% if prod.no_carrinho %}
-            <a href="/carrinho" class="btn btn-success">Ver no Carrinho</a>
-            {% else %}
-            <a href="/carrinhoincluir?id_prod={{prod.ID_Produto}}" class="btn btn-primary">Comprar</a>
-            {% endif %}
+              {% if prod.Qtn_Produto <= 0 %}
+              <a class="btn btn-secondary" disabled>Produto Indisponível</a>
+              {% else %}
+              {% if prod.no_carrinho %}
+               <a href="/carrinho" class="btn btn-success">Ver no Carrinho</a>
+              {% else %}
+                <a href="/carrinhoincluir?id_prod={{prod.ID_Produto}}" class="btn btn-primary">Comprar</a>
+              {% endif %}
+              {% endif %}
             {% else %}
             <a href="/login" class="btn btn-primary">Comprar</a>
             {% endif %}
@@ -152,7 +156,7 @@
     {% if mensagem %}
       Swal.fire({
         icon: '{{ icon }}',
-        title: '{{ mensagem_header }}',
+        title: '{{ mensagem_header}}',
         text: '{{ mensagem }}',
         confirmButtonColor: '#4a3428',
       });

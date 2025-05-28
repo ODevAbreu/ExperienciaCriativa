@@ -75,13 +75,14 @@
         <div>
           <strong>Compra #{{ compra.ID_Compra }}</strong><br>
           Data: {{ compra.Data_Compra }}<br>
-          Status: {{ compra.Status }}
+          Status: {{ compra.Status }}<br>
+          Forma de Pagamento: {{ compra.Forma_Pagamento }}
         </div>
         <div style="text-align: right;">
           <strong>Endereço de entrega:</strong><br>
-          {{ compra.Rua }}, {{ compra.Numero }}<br>
-          {{ compra.Bairro }} - {{ compra.Cidade }}<br>
-          CEP: {{ compra.CEP }}
+          {{ compra.Rua_entrega }}, {{ compra.Numero_entrega }}<br>
+          {{ compra.Bairro_entrega }} - {{ compra.Cidade_entrega }}<br>
+          CEP: {{ compra.CEP_entrega }}
         </div>
       </div>
       

@@ -41,7 +41,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -132,13 +132,13 @@ async def listar_usuarios(usuario_id: int, request: Request, db = Depends(get_db
                     c.ID_Compra,
                     c.Data_Compra,
                     c.Status,
-                    e.Rua,
-                    e.Numero,
-                    e.Bairro,
-                    e.Cidade,
-                    e.CEP
+                    c.Forma_Pagamento,
+                    c.Rua_entrega,
+                    c.Numero_entrega,
+                    c.Bairro_entrega,
+                    c.Cidade_entrega,
+                    c.CEP_entrega
                 FROM Compra c
-                LEFT JOIN Endereco e ON c.ID_Endereco = e.ID_Endereco
                 WHERE c.ID_Usuario = %s AND c.Status = 'fechada'
                 ORDER BY c.Data_Compra DESC
             """, (usuario_id,))
@@ -628,6 +628,17 @@ async def carrinho(
     id_compra = request.session.get("id_compra")
 
     with db.cursor(pymysql.cursors.DictCursor) as cursor:
+        sql_remove_zerados = """
+            DELETE FROM qtd_produto
+            WHERE fk_Compra_ID_Compra = %s
+              AND fk_Produto_ID_Produto IN (
+                  SELECT ID_Produto FROM produto WHERE Qtn_Produto = 0
+              )
+        """
+        cursor.execute(sql_remove_zerados, (id_compra,))
+        db.commit()
+        
+        
         # Produtos no carrinho
         sql = """
             SELECT
@@ -646,7 +657,8 @@ async def carrinho(
             WHERE 
                 c.ID_Usuario = %s  
                 AND c.ID_Compra = %s
-                AND c.Status = 'aberta';
+                AND c.Status = 'aberta'
+                AND p.Qtn_Produto > 0;
         """
         cursor.execute(sql, (id_cliente, id_compra))
         produtos = cursor.fetchall()
@@ -805,6 +817,7 @@ async def finalizar(
     request: Request,
     id_compra: int,
     id_endereco: int = Form(...),
+    pagamento: str = Form(...),
     db=Depends(get_db)
 ):
     id_cliente = request.session.get("Id")
@@ -816,29 +829,75 @@ async def finalizar(
         request.session["mensagem_header"] = "Erro"
         request.session["mensagem"] = "Selecione um endereço para finalizar a compra."
         return RedirectResponse("/carrinho", status_code=303)
-    
-    try:
-        with db.cursor() as cursor:
-            data_atual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            # Atualizar a compra com o ID do endereço, status e data da compra
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Pega os dados do endereço selecionado
+            sql_endereco = """
+                SELECT Rua, Numero, Bairro, Cidade, CEP
+                FROM endereco
+                WHERE ID_Endereco = %s AND fk_ID_Usuario = %s
+            """
+            cursor.execute(sql_endereco, (id_endereco, id_cliente))
+            endereco = cursor.fetchone()
+            
+            
+            cursor.execute("""
+                SELECT p.ID_Produto, p.Qtn_Produto AS estoque_atual, qp.Qtn_Produto AS qtd_solicitada, p.Nome_Produto
+                FROM produto p
+                JOIN qtd_produto qp ON p.ID_Produto = qp.fk_Produto_ID_Produto
+                WHERE qp.fk_Compra_ID_Compra = %s
+            """, (id_compra,))
+            produtos = cursor.fetchall()
+
+            for produto in produtos:
+                if produto["qtd_solicitada"] > produto["estoque_atual"]:
+                    request.session["mensagem_header"] = "Estoque insuficiente"
+                    request.session["mensagem"] = (
+                        f"Produto '{produto['Nome_Produto']}' possui apenas "
+                        f"{produto['estoque_atual']} unidades em estoque, "
+                        f"mas você solicitou {produto['qtd_solicitada']}."
+                    )
+                    return RedirectResponse("/carrinho", status_code=303)
+            
+            
+            
+            # Atualizar a compra com os dados do endereço e forma de pagamento
+            data_atual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             sql_update_compra = """
                 UPDATE compra
-                SET Status = 'fechada',
-                    ID_Endereco = %s,
-                    Data_Compra = %s
-                WHERE ID_Compra = %s
+                SET 
+                    Status = 'fechada',
+                    Data_Compra = %s,
+                    Forma_Pagamento = %s,
+                    Rua_entrega = %s,
+                    Numero_entrega = %s,
+                    Bairro_entrega = %s,
+                    Cidade_entrega = %s,
+                    CEP_entrega = %s
+                WHERE ID_Compra = %s AND ID_Usuario = %s
             """
-            cursor.execute(sql_update_compra, (id_endereco, data_atual, id_compra))
+            cursor.execute(sql_update_compra, (
+                data_atual,
+                pagamento,
+                endereco["Rua"],
+                endereco["Numero"],
+                endereco["Bairro"],
+                endereco["Cidade"],
+                endereco["CEP"],
+                id_compra,
+                id_cliente
+            ))
             db.commit()
 
             # Atualizar o estoque dos produtos
             sql_update_estoque = """ 
                 UPDATE produto
                 SET Qtn_Produto = Qtn_Produto - (
-                    SELECT SUM(Qtn_Produto)
+                    SELECT Qtn_Produto
                     FROM qtd_produto
-                    WHERE fk_Compra_ID_Compra = %s
+                    WHERE qtd_produto.fk_Compra_ID_Compra = %s 
+                      AND qtd_produto.fk_Produto_ID_Produto = produto.ID_Produto
                 )
                 WHERE ID_Produto IN (
                     SELECT fk_Produto_ID_Produto
@@ -849,7 +908,7 @@ async def finalizar(
             cursor.execute(sql_update_estoque, (id_compra, id_compra))
             db.commit()
 
-            # Finalizar sessão da compra
+            # Encerrar a sessão da compra
             request.session["id_compra"] = None
             request.session["mensagem_header"] = "Compra finalizada"
             request.session["mensagem"] = "Compra finalizada com sucesso!"
@@ -862,6 +921,7 @@ async def finalizar(
 
     finally:
         db.close()
+        
 @app.post("/cadastrar_endereco_exe")
 async def cadastrar_endereco_exe(
     request: Request,

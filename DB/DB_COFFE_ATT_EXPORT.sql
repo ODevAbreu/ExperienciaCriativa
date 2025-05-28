@@ -30,11 +30,15 @@ CREATE TABLE endereco (
 CREATE TABLE compra (
   ID_Compra INT AUTO_INCREMENT PRIMARY KEY,
   ID_Usuario INT,
-  ID_Endereco INT,
   Status VARCHAR(20) DEFAULT 'aberta',
   Data_Compra DATETIME NULL,
-  FOREIGN KEY (ID_Usuario) REFERENCES usuario(Id) ON DELETE CASCADE,
-  FOREIGN KEY (ID_Endereco) REFERENCES endereco(ID_Endereco) ON DELETE SET NULL
+  Forma_Pagamento VARCHAR(20),
+  Rua_entrega VARCHAR(255),
+  Numero_entrega VARCHAR(10),
+  Bairro_entrega VARCHAR(100),
+  Cidade_entrega VARCHAR(100),
+  CEP_entrega VARCHAR(20),
+  FOREIGN KEY (ID_Usuario) REFERENCES usuario(Id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Tabela produto
