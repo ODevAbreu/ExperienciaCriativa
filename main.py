@@ -29,7 +29,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 # Configuração de sessão (chave secreta para cookies de sessão)
-app.add_middleware(SessionMiddleware, secret_key="clinica")
+app.add_middleware(SessionMiddleware, secret_key="clinica", max_age=10)  #10 segundos
 
 # Configuração de arquivos estáticos
 app.mount("/static", StaticFiles(directory="static"), name="static")
