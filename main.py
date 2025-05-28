@@ -650,6 +650,7 @@ async def carrinho(
         """
         cursor.execute(sql, (id_cliente, id_compra))
         produtos = cursor.fetchall()
+        tem_prod = len(produtos) > 0
 
         # Busca os endereços do cliente
         sql_endereco = """
@@ -671,7 +672,8 @@ async def carrinho(
         "mensagem": mensagem,
         "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),
         "enderecos": enderecos,  
-        "tem_endereco": tem_endereco 
+        "tem_endereco": tem_endereco,
+        "tem_prod": tem_prod 
     })
     
 @app.get("/carrinhoincluir")
@@ -798,7 +800,7 @@ async def atualizar_quantidade(product_id: int, request: Request, qtd: int = For
         return {"error": f"Erro ao atualizar a quantidade: {str(e)}"}
 
 
-@app.post("/finalizar/{id_compra}")
+@app.post("/finalizar_compra/{id_compra}")
 async def finalizar(
     request: Request,
     id_compra: int,

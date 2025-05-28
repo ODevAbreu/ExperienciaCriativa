@@ -62,7 +62,7 @@
 
         <div class="cart-summary p-4 border rounded mt-4 bg-white"
           style="font-family: 'Poppins', sans-serif !important;">
-          <form action="/finalizar/{{ id_compra }}" method="post">
+          <form action="/finalizar_compra/{{ id_compra }}" method="post">
             <h2 class="mb-3 text-center">Endereço de Entrega</h2>
 
             {% if enderecos %}
@@ -102,14 +102,21 @@
               <span class="fw-bold">Total:</span>
               <span id="cartTotal" class="fw-bold">R${{ total }}</span>
             </div>
-            {% if enderecos %}
+            {% if enderecos and tem_prod %}
               <button type="submit" class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
                 Finalizar Compra
               </button>
             {% else %}
-              <button type="button" disabled class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
-               Cadastre um endereço para finalizar a compra
+               {%if tem_prod%}
+               <button type="button" disabled class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
+                Cadastre um endereço para finalizar a compra
               </button>
+              {% else %}
+              <button type="button" disabled class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
+                Adicione um produto para finalizar a compra
+              </button>
+                {% endif %}
+
             {% endif %}
           </form>
 
