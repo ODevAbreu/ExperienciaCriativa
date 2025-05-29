@@ -29,7 +29,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 # Configuração de sessão (chave secreta para cookies de sessão)
-app.add_middleware(SessionMiddleware, secret_key="clinica", max_age=10)  #10 segundos
+app.add_middleware(SessionMiddleware, secret_key="clinica", max_age=20)  #10 segundos
 
 # Configuração de arquivos estáticos
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -41,12 +41,9 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "1234",
     "database": "coffee"
 }
-
-
-
 
 # Função para obter conexão com MySQL
 def get_db():
@@ -107,7 +104,9 @@ async def cadastro(
 @app.get("/incluirproduto")
 async def incluirproduto(
     request: Request
-):
+):    
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     #return RedirectResponse(url="/login.html", status_code=303)
     return templates.TemplateResponse("prodIncluir.html", {
         "request": request,
@@ -115,6 +114,8 @@ async def incluirproduto(
 
 @app.get("/usuarios/{usuario_id}", response_class=HTMLResponse)
 async def listar_usuarios(usuario_id: int, request: Request, db = Depends(get_db)):
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor(pymysql.cursors.DictCursor) as cursor:
             # Buscar informações do usuário
@@ -176,6 +177,8 @@ async def listar_usuarios(usuario_id: int, request: Request, db = Depends(get_db
 
 @app.get("/deletar_usuario/{usuario_id}", name="deletar_usuario")
 async def deletar_usuario(request: Request, usuario_id: int, db=Depends(get_db)):
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor() as cursor: 
             cursor.execute("DELETE FROM Usuario WHERE ID = %s", (usuario_id,))
@@ -310,6 +313,8 @@ async def cadastrar_usuario(
 
 @app.get("/editar_usuario/{usuario_id}", response_class=HTMLResponse)
 async def editar_usuario_form(usuario_id: int, request: Request, db=Depends(get_db)):
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor() as cursor:
             cursor.execute("SELECT * FROM Usuario WHERE Id = %s", (usuario_id,))
@@ -337,10 +342,9 @@ async def editar_usuario_form(usuario_id: int, request: Request, db=Depends(get_
         db.close()
 
 
-
-
 @app.post("/editar_usuario/{usuario_id}")
 async def salvar_edicao_usuario(
+    request: Request,
     usuario_id: int,
     nome: str = Form(...),
     email: str = Form(...),
@@ -350,6 +354,8 @@ async def salvar_edicao_usuario(
     senha_nova: str = Form(None),
     db=Depends(get_db)
 ):
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor() as cursor:
             cursor.execute("SELECT Senha FROM Usuario WHERE Id = %s", (usuario_id,))
@@ -547,6 +553,8 @@ async def prodexcluir(request: Request, id: int, db=Depends(get_db)):
 
 @app.get("/prodexcluir_exe/{id}")
 async def prodexcluir_exe(request: Request, id: int, db = Depends(get_db)):
+    if not request.session.get("user_logged_in"):
+        return RedirectResponse(url="/", status_code=303)
     try:
         with db.cursor(pymysql.cursors.DictCursor) as cursor:
             sql_delete = "DELETE FROM Produto WHERE ID_Produto = %s"
