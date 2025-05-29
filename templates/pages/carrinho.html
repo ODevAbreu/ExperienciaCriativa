@@ -33,6 +33,13 @@
                   style="max-width: 80px;">
               </div>
               <div class="col-md-6">
+{% if ajustes %}
+<ul>
+  {% for item in ajustes %}
+    <li>{{ item }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
                 <h5 class="card-title">{{prod.Nome_Produto}}</h5>
                 <p class="card-text text-muted">{{prod.Descr_Produto}}</p>
               </div>
@@ -145,11 +152,11 @@
       });
     }
     document.addEventListener("DOMContentLoaded", function () {
-      {% if mensagem %}
+      {% if mensagem_carrinho %}
       Swal.fire({
         icon: '{{ icon }}',
         title: '{{ mensagem_header }}',
-        text: {{ mensagem | tojson }},
+        text: {{ mensagem_carrinho | tojson }},
         confirmButtonColor: '#4a3428',
       });
       {% endif %}

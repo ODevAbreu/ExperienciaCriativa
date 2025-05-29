@@ -42,7 +42,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "PUC@1234",
+    "password": "",
     "database": "coffee"
 }
 
@@ -720,7 +720,7 @@ async def carrinho(
     db=Depends(get_db)
 ):
     mensagem_header = request.session.pop("mensagem_header", None)
-    mensagem = request.session.pop("mensagem", None)
+    mensagem = request.session.pop("mensagem_carrinho", None)
 
     if not request.session.get("user_logged_in"):   
         return RedirectResponse(url="/", status_code=303)
@@ -738,6 +738,32 @@ async def carrinho(
         """
         cursor.execute(sql_remove_zerados, (id_compra,))
         db.commit()
+                # Busca produtos no carrinho
+        cursor.execute("""
+            SELECT qp.fk_Produto_ID_Produto AS id_produto,
+                   qp.Qtn_Produto AS qtd_solicitada,
+                   p.Nome_Produto,
+                   p.Qtn_Produto AS estoque
+            FROM qtd_produto qp
+            JOIN produto p ON p.ID_Produto = qp.fk_Produto_ID_Produto
+            WHERE qp.fk_Compra_ID_Compra = %s
+        """, (id_compra,))
+        itens = cursor.fetchall()
+
+        ajustes = []
+
+        for item in itens:
+            if item["qtd_solicitada"] > item["estoque"]:
+                nova_qtd = item["estoque"]
+                cursor.execute("""
+                    UPDATE qtd_produto
+                    SET Qtn_Produto = %s
+                    WHERE fk_Compra_ID_Compra = %s AND fk_Produto_ID_Produto = %s
+                """, (nova_qtd, id_compra, item["id_produto"]))
+                ajustes.append(f"{item['Nome_Produto']} ajustado para {nova_qtd} unidade(s) por falta de estoque")
+
+        if ajustes:
+            db.commit()
         
         
         # Produtos no carrinho
@@ -782,7 +808,7 @@ async def carrinho(
         "produtos": produtos,
         "id_compra": id_compra,
         "mensagem_header": mensagem_header,
-        "mensagem": mensagem,
+        "mensagem_carrinho": mensagem,
         "total": sum(prod["Preco_prod"] * prod["Qtn_Produto"] for prod in produtos),
         "enderecos": enderecos,  
         "tem_endereco": tem_endereco,
@@ -829,11 +855,11 @@ async def carrinhoincluir(request: Request, id_prod: int, db=Depends(get_db)):
             db.commit()
         request.session["icon"] = "sucess"
         request.session["mensagem_header"] = "Sucesso!"
-        request.session["mensagem"] = "Produto adicionado ao carrinho!"
+        request.session["mensagem_carrinho"] = "Produto adicionado ao carrinho!"
         return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
-        request.session["mensagem"] = f"Erro: {str(e)}"
+        request.session["mensagem_carrinho"] = f"Erro: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
     finally:
@@ -851,18 +877,18 @@ async def carrinho_remover(request: Request, id_prod: int, db=Depends(get_db)):
             id_compra = request.session.get("id_compra")
 
             if not id_compra:
-                request.session["mensagem"] = "Não há carrinho de compras aberto."
+                request.session["mensagem_carrinho"] = "Não há carrinho de compras aberto."
                 return RedirectResponse("/carrinho", status_code=303)
 
             # Remove o produto do carrinho
             cursor.execute("DELETE FROM QTD_Produto WHERE fk_Compra_ID_Compra = %s AND fk_Produto_ID_Produto = %s", (id_compra, id_prod))
             db.commit()
             request.session["mensagem_header"] = "Sucesso!"
-            request.session["mensagem"] = "Produto removido do carrinho!"
+            request.session["mensagem_carrinho"] = "Produto removido do carrinho!"
             return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
-        request.session["mensagem"] = f"Erro ao remover produto: {str(e)}"
+        request.session["mensagem_carrinho"] = f"Erro ao remover produto: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
     finally:
@@ -895,7 +921,7 @@ async def atualizar_quantidade(product_id: int, request: Request, qtd: int = For
             if qtd > estoque_disponivel:
                 request.session["icon"] = "error"
                 request.session["mensagem_header"] = "Erro!"
-                request.session["mensagem"] = "Quantidade solicitada excede o estoque disponível."
+                request.session["mensagem_carrinho"] = "Quantidade solicitada excede o estoque disponível."
                 return RedirectResponse("/carrinho", status_code=303)
 
             # 3. Atualiza a quantidade no carrinho
@@ -928,7 +954,7 @@ async def finalizar(
 
     if not id_endereco:
         request.session["mensagem_header"] = "Erro"
-        request.session["mensagem"] = "Selecione um endereço para finalizar a compra."
+        request.session["mensagem_carrinho"] = "Selecione um endereço para finalizar a compra."
         return RedirectResponse("/carrinho", status_code=303)
 
     try:
@@ -954,7 +980,7 @@ async def finalizar(
             for produto in produtos:
                 if produto["qtd_solicitada"] > produto["estoque_atual"]:
                     request.session["mensagem_header"] = "Estoque insuficiente"
-                    request.session["mensagem"] = (
+                    request.session["mensagem_carrinho"] = (
                         f"Produto '{produto['Nome_Produto']}' possui apenas "
                         f"{produto['estoque_atual']} unidades em estoque, "
                         f"mas você solicitou {produto['qtd_solicitada']}."
@@ -1012,12 +1038,12 @@ async def finalizar(
             # Encerrar a sessão da compra
             request.session["id_compra"] = None
             request.session["mensagem_header"] = "Compra finalizada"
-            request.session["mensagem"] = "Compra finalizada com sucesso!"
+            request.session["mensagem_carrinho"] = "Compra finalizada com sucesso!"
             return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
         request.session["mensagem_header"] = "Erro"
-        request.session["mensagem"] = f"Erro ao finalizar a compra: {str(e)}"
+        request.session["mensagem_carrinho"] = f"Erro ao finalizar a compra: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
     finally:
@@ -1051,11 +1077,11 @@ async def cadastrar_endereco_exe(
             print("Endereço adicionado com ID:", id_endereco)
             
             request.session["mensagem_header"] = "Endereço cadastrado"
-            request.session["mensagem"] = "Endereço cadastrado com sucesso!"
+            request.session["mensagem_carrinho"] = "Endereço cadastrado com sucesso!"
             return RedirectResponse("/carrinho", status_code=303)
     except Exception as e:
         request.session["mensagem_header"] = "Erro"
-        request.session["mensagem"] = f"Erro ao cadastrar endereço: {str(e)}"
+        request.session["mensagem_carrinho"] = f"Erro ao cadastrar endereço: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
     finally:
@@ -1125,12 +1151,12 @@ async def editar_endereco_exe(
             db.commit()
 
             request.session["mensagem_header"] = "Endereço atualizado"
-            request.session["mensagem"] = "Endereço atualizado com sucesso!"
+            request.session["mensagem_carrinho"] = "Endereço atualizado com sucesso!"
             return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
         request.session["mensagem_header"] = "Erro"
-        request.session["mensagem"] = f"Erro ao atualizar endereço: {str(e)}"
+        request.session["mensagem_carrinho"] = f"Erro ao atualizar endereço: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
     finally:
@@ -1157,12 +1183,12 @@ async def endereco_excluir(
             db.commit()
 
             request.session["mensagem_header"] = "Endereço removido"
-            request.session["mensagem"] = "Endereço excluído com sucesso!"
+            request.session["mensagem_carrinho"] = "Endereço excluído com sucesso!"
             return RedirectResponse("/carrinho", status_code=303)
 
     except Exception as e:
         request.session["mensagem_header"] = "Erro"
-        request.session["mensagem"] = f"Erro ao excluir endereço: {str(e)}"
+        request.session["mensagem_carrinho"] = f"Erro ao excluir endereço: {str(e)}"
         return RedirectResponse("/carrinho", status_code=303)
 
     finally:
