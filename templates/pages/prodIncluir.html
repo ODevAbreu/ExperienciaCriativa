@@ -3,228 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro</title>
+    <title>Cadastro de Produto - Coffee or Nothing</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
     <style>
+        /* Estilos para o layout de sticky footer e cores base */
+        html, body {
+            height: 100%; /* Permite que min-height: 100vh funcione corretamente */
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Corpo ocupa pelo menos toda a altura da viewport */
+            background-color: #63320d; /* Sua cor de fundo original */
+        }
+        main {
+            flex-grow: 1; /* Faz o conteúdo principal expandir */
+        }
+
+        /* Seus estilos customizados */
         .btn-custom {
-          background-color: #744321; /* Marrom café */
-          border-color: #744321;
-          color: #f5f5dc;
+            background-color: #744321; /* Marrom café */
+            border-color: #744321;
+            color: #f5f5dc;
+        }
+        .btn-custom:hover {
+            background-color: #5a341a;
+            border-color: #5a341a;
+            color: #f5f5dc;
+        }
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        .form-control.is-valid { /* Não usado ativamente, mas bom ter */
+            border-color: #198754;
         }
     </style>
-
 </head>
-<body style="background-color: #63320d;"> 
+<body>
 
-<section class="vh-100 d-flex justify-content-center align-items-center">
-  <div class="container">
-    <div class="row d-flex justify-content-center">
-      <div class="col-md-12 col-lg-9"> 
-        <div class="card p-4" style="border-radius: 1rem;">
-          <div class="card-body text-black">
+    {% include 'geral/menu.html' %}
 
-            <h1 class="fw-bold text-center mb-4">Cadastro de Produto</h1>
-
-            <form class="w3-container" action="/prodincluir_exe" method="post" enctype="multipart/form-data">
-              <div class="row">
-                <div class="mb-3">
-                  <label class="form-label" for="nome_prod">Nome do Produto</label>
-                  <input type="text" id="nome_prod" name="nome" class="form-control" placeholder="Digite o Nome do Produto" minlength="5" required/>
-                </div>
-                <div class="mb-3">
-                  <label for="descr_prod" class="form-label">Descrição do Produto</label>
-                  <textarea class="form-control" id="descr_prod" name="descr" rows="2"></textarea>
-                </div>
-              </div>
-              <div class="row">
-                <div class="mb-3">
-                  <label class="form-label" for="tipo_prod">Tipo Produto</label>
-                  <select name="tipo" id="tipo_prod" class="form-select">
-                    <option>Cappuccino</option>
-                    <option>Expresso</option>
-                    <option>Latte</option>
-                    <option>Mocha</option>
-                  </select>
-                </div>
-              </div>
-              <div class="row">
-                <div class="mb-3">
-                  <label class="form-label" for="preco_prod">Preço do Produto</label>
-                  <input type="number" id="preco_prod" name="preco" class="form-control" step="0.01" placeholder="Digite o preço do produto" required/>
-                </div>    
-              </div>
-              <div class="row">
-                <div class="mb-3">
-                  <label class="form-label" for="qtd_prod">Quantidade em estoque</label>
-                  <input type="number" id="qtd_prod" name="qtd" class="form-control" placeholder="Digite a quantidade do produto em estoque" required/>
-                </div>    
-              </div>
-              <div class="row">
-                <div class="mb-3">
-                  <label class="form-label" for="img_prod">Imagem do Produto</label>
-                  <input type="file" id="img_prod" name="imagem" class="form-control" accept="image/*"/>
-                  <div class="form-text">Selecione uma imagem para o produto (JPEG, PNG, etc.)</div>
+    <main class="py-5"> {/* py-5 adiciona padding no topo e na base do conteúdo principal */}
+        <section> {/* Removido vh-100, d-flex, align-items-center, py-4 daqui */}
+            <div class="container">
+                <div class="row d-flex justify-content-center"> {/* d-flex e justify-content-center para centralizar a coluna */}
+                    <div class="col-md-12 col-lg-9">
+                        <div class="card p-4 shadow-sm" style="border-radius: 1rem;"> 
+                            <div class="card-body text-black">
+                                <h1 class="fw-bold text-center mb-4">Cadastro de Produto</h1>
+                                <form id="formProduto" class="w3-container" action="/prodincluir_exe" method="post" enctype="multipart/form-data" novalidate>
+                                    <div class="row">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="nome_prod">Nome do Produto</label>
+                                            <input type="text" id="nome_prod" name="nome" class="form-control" placeholder="Digite o Nome do Produto" minlength="5" required pattern="^[a-zA-Z0-9À-ú\s'-]{5,}$" title="Mínimo 5 caracteres. Use letras, números, espaços, apóstrofos ou hífens."/>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="descr_prod" class="form-label">Descrição do Produto</label>
+                                            <textarea class="form-control" id="descr_prod" name="descr" rows="2" minlength="5" maxlength="500" required placeholder="Digite a descrição (mín. 5 caracteres, máx. 500)" title="Mínimo 5 caracteres."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="tipo_prod">Tipo Produto</label>
+                                            <select name="tipo" id="tipo_prod" class="form-select" required>
+                                                <option value="">Selecione um tipo</option>
+                                                <option value="Cappuccino">Cappuccino</option>
+                                                <option value="Expresso">Expresso</option>
+                                                <option value="Latte">Latte</option>
+                                                <option value="Mocha">Mocha</option>
+                                                <option value="Grãos">Grãos</option>
+                                                <option value="Outros">Outros</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="preco_prod">Preço do Produto (R$)</label>
+                                            <input type="text" id="preco_prod" name="preco" class="form-control" inputmode="numeric" placeholder="Ex: 25,50 (máx 99,99)" required title="Digite um preço entre 0,01 e 99,99"/>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="qtd_prod">Quantidade em estoque</label>
+                                            <input type="text" id="qtd_prod" name="qtd" class="form-control" inputmode="numeric" placeholder="0 a 1000" required title="Digite um número inteiro entre 0 e 1000."/>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="img_prod">Imagem do Produto</label>
+                                            <input type="file" id="img_prod" name="imagem" class="form-control" accept="image/jpeg, image/png, image/gif"/>
+                                            <div class="form-text">Selecione uma imagem para o produto (JPEG, PNG, GIF).</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid mt-4">
+                                        <button class="btn btn-dark btn-custom" type="submit" id="btnCadastrar">Cadastrar</button>
+                                    </div>
+                                    <div class="d-grid mt-2">
+                                        <button type="button" class="btn btn-outline-secondary w-100" id="btnVoltar">Voltar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-              <div class="d-grid mt-4">
-                <button class="btn btn-dark btn-custom" type="submit" id="btnCadastrar">Cadastrar</button>
-              </div>
-            </form>
-            
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
+        </section>
+    </main>
 
-function mascaraTelefone(event) {
-  let tecla = event.key;
-  // Regex: 
-  // g = não termina verificação enquanto não houver combinação para todos os elementos da Regex
-  // \D+ = troca qualquer caractere que não seja um dígito por caracter vazio
-  let telefone = event.target.value.replace(/\D+/g, "");
+    {% include 'geral/footer.html' %}
 
-  // Regex: i = case insensitive
-  // Se Tecla é número, concatena com telefone
-  if (/^[0-9]$/i.test(tecla)) {
-    telefone = telefone + tecla;
-    let tamanho = telefone.length;
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const formProduto = document.getElementById('formProduto');
+        const nomeProdInput = document.getElementById('nome_prod');
+        const descrProdInput = document.getElementById('descr_prod');
+        const tipoProdInput = document.getElementById('tipo_prod');
+        const precoProdInput = document.getElementById('preco_prod');
+        const qtdProdInput = document.getElementById('qtd_prod');
+        const btnVoltar = document.getElementById('btnVoltar');
 
-    if (tamanho >= 12) { // Se telefone com 12 ou mais caracteres, não faz mais nada
-      return false;
-    }
+        function showError(inputElement, message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro de Validação',
+                text: message,
+                confirmButtonColor: '#744321',
+                didClose: () => {
+                    if (inputElement && typeof inputElement.focus === 'function') {
+                        inputElement.focus();
+                    }
+                    if (inputElement && typeof inputElement.classList === 'object') {
+                        inputElement.classList.add('is-invalid');
+                    }
+                }
+            });
+            if (inputElement && typeof inputElement.addEventListener === 'function') {
+                inputElement.addEventListener('input', () => {
+                    if (inputElement && typeof inputElement.classList === 'object') {
+                        inputElement.classList.remove('is-invalid');
+                    }
+                }, { once: true });
+            }
+        }
 
-    if (tamanho > 10) { 
-      telefone = telefone.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
-    } else if (tamanho > 5) { 
-      telefone = telefone.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
-    } else if (tamanho > 2) { 
-      telefone = telefone.replace(/^(\d\d)(\d{0,5})/, "($1) $2");
-    } else {
-      telefone = telefone.replace(/^(\d*)/, "($1");
-    }
+        if(qtdProdInput) {
+            qtdProdInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value) {
+                    let numValue = parseInt(value, 10);
+                    if (numValue > 1000) {
+                        value = "1000";
+                    }
+                }
+                e.target.value = value;
+            });
+        }
 
-    event.target.value = telefone;
-  }
+        if(precoProdInput) {
+            precoProdInput.addEventListener('input', function(e) {
+                let value = e.target.value;
+                let digits = value.replace(/\D/g, ''); 
 
-  if (!["Backspace", "Delete", "Tab"].includes(tecla)) {
-    return false;
-  }
-}
+                if (digits.length > 4) {
+                    digits = digits.substring(0, 4);
+                }
+                if (digits.length === 4 && parseInt(digits, 10) > 9999) {
+                    digits = "9999";
+                }
 
+                let formattedValue = "";
+                if (digits.length === 0) {
+                    formattedValue = "";
+                } else if (digits.length === 1) {
+                    formattedValue = `0,0${digits}`;
+                } else if (digits.length === 2) {
+                    formattedValue = `0,${digits}`;
+                } else if (digits.length === 3) {
+                    formattedValue = `${digits.charAt(0)},${digits.substring(1)}`;
+                } else { 
+                    formattedValue = `${digits.substring(0, 2)},${digits.substring(2)}`;
+                }
+                e.target.value = formattedValue;
+            });
+        }
+        
+        if (btnVoltar) {
+            btnVoltar.addEventListener('click', function() {
+                window.history.back();
+            });
+        }
 
-function mascaraCPF(event) {
-  let tecla = event.key;
-  let cpf = event.target.value.replace(/\D+/g, ""); // Remove tudo que não for número
+        if (formProduto) {
+            formProduto.addEventListener('submit', function (event) {
+                event.preventDefault(); 
+                document.querySelectorAll('.form-control, .form-select').forEach(el => el.classList.remove('is-invalid'));
 
-  // Se a tecla for um número, adiciona ao CPF
-  if (/^[0-9]$/i.test(tecla)) {
-    cpf = cpf + tecla;
-    let tamanho = cpf.length;
+                const nomeProdValue = nomeProdInput.value.trim();
+                if (!nomeProdValue) { showError(nomeProdInput, 'O nome do produto é obrigatório.'); return; }
+                if (nomeProdValue.length < 5) { showError(nomeProdInput, 'O nome do produto deve ter no mínimo 5 caracteres.'); return; }
+                
+                const descrProdValue = descrProdInput.value.trim();
+                if (!descrProdValue) { showError(descrProdInput, 'A descrição do produto é obrigatória.'); return; }
+                if (descrProdValue.length < 5) { showError(descrProdInput, 'A descrição do produto deve ter no mínimo 5 caracteres.'); return; }
+                if (descrProdValue.length > 500) { showError(descrProdInput, 'A descrição do produto não pode exceder 500 caracteres.'); return; }
 
-    if (tamanho >= 12) { // Se CPF tiver mais de 11 dígitos, não faz mais nada
-      return false;
-    }
+                if (tipoProdInput.value === "") { showError(tipoProdInput, 'Por favor, selecione o tipo do produto.'); return; }
 
-    // Aplica a máscara no formato XXX.XXX.XXX-XX
-    if (tamanho > 9) {
-      cpf = cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,2}).*/, "$1.$2.$3-$4");
-    } else if (tamanho > 6) {
-      cpf = cpf.replace(/^(\d{3})(\d{3})(\d{0,3})/, "$1.$2.$3");
-    } else if (tamanho > 3) {
-      cpf = cpf.replace(/^(\d{3})(\d{0,3})/, "$1.$2");
-    }
+                const precoDisplayValue = precoProdInput.value.trim();
+                if (!precoDisplayValue) { showError(precoProdInput, 'O preço do produto é obrigatório.'); return; }
+                const precoValueForValidation = precoDisplayValue.replace(',', '.');
+                const precoFloat = parseFloat(precoValueForValidation);
+                if (isNaN(precoFloat) || precoFloat <= 0 || precoFloat > 99.99) { showError(precoProdInput, 'O preço do produto deve ser um valor numérico entre R$ 0,01 e R$ 99,99. Formato esperado: XX,YY.'); return; }
+                const displayFormatRegex = /^(0|[1-9]\d?),\d{2}$/; 
+                if (!displayFormatRegex.test(precoDisplayValue)) { showError(precoProdInput, 'O formato do preço é inválido. A máscara deve gerar valores como 0,01 ou 12,34.'); return; }
+                
+                const qtdProdValue = qtdProdInput.value.trim();
+                const qtdProdRegex = /^\d+$/;
+                if (qtdProdValue === "") { showError(qtdProdInput, 'A quantidade em estoque é obrigatória.'); return; }
+                if (!qtdProdRegex.test(qtdProdValue)) { showError(qtdProdInput, 'A quantidade em estoque deve conter apenas números inteiros.'); return; }
+                const qtdInt = parseInt(qtdProdValue, 10);
+                if (isNaN(qtdInt) || qtdInt < 0 || qtdInt > 1000) { showError(qtdProdInput, 'A quantidade em estoque deve ser um número inteiro entre 0 e 1000.'); return; }
 
-    event.target.value = cpf;
-  }
-
-  // Permite apenas backspace, delete e tab
-  if (!["Backspace", "Delete", "Tab"].includes(tecla)) {
-    return false;
-  }
-}
-
-// Função para validar CPF
-function validarCPF(cpf) {
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false; // Verifica se todos os dígitos são iguais ou tamanho inválido
-
-  let soma = 0;
-  let resto;
-
-  // Calcula o primeiro dígito verificador
-  for (let i = 1; i <= 9; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-  }
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(9, 10))) return false;
-
-  soma = 0;
-
-  // Calcula o segundo dígito verificador
-  for (let i = 1; i <= 10; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-  }
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(10, 11))) return false;
-
-  return true;
-}
-
-document.getElementById('data').setAttribute('max', new Date().toISOString().split('T')[0]);
-
-document.getElementById('toggleSenha').addEventListener('click', function () {
-    var senhaInput = document.getElementById('senha');
-    var icon = this.querySelector('i');
-
-    if (senhaInput.type === 'password') {
-      senhaInput.type = 'text';
-      icon.classList.remove('bi-eye');
-      icon.classList.add('bi-eye-slash');
-    } else {
-      senhaInput.type = 'password';
-      icon.classList.remove('bi-eye-slash');
-      icon.classList.add('bi-eye');
-    }
-  });
-
-document.getElementById('btnCadastrar').addEventListener('click', function (event) {
-  event.preventDefault(); // Previne o envio do formulário
-
-  const cpfInput = document.getElementById('cpf');
-  const cpf = cpfInput.value.replace(/\D+/g, ""); // Remove a máscara do CPF
-
-  if (!validarCPF(cpf)) {
-    Swal.fire({
-      icon: 'error',
-      title: 'CPF inválido!',
-      text: 'Por favor, insira um CPF válido.',
-      confirmButtonColor: '#744321'
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Produto Validado!',
+                    text: 'Informações do produto validadas com sucesso. Clique em OK para cadastrar.',
+                    confirmButtonColor: '#744321',
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
+                    cancelButtonColor: '#6c757d'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const hiddenPrecoInput = document.createElement('input');
+                        hiddenPrecoInput.type = 'hidden';
+                        hiddenPrecoInput.name = 'preco_numerico'; 
+                        hiddenPrecoInput.value = precoFloat.toFixed(2);
+                        formProduto.appendChild(hiddenPrecoInput);
+                        
+                        formProduto.submit(); 
+                    }
+                });
+            });
+        }
     });
-    cpfInput.focus(); // Foca no campo de CPF
-    return;
-  }
-
-  // Se o CPF for válido, exibe mensagem de sucesso
-  Swal.fire({
-    icon: 'success',
-    title: 'Cadastro realizado!',
-    text: 'Seu cadastro foi concluído com sucesso.',
-    confirmButtonColor: '#744321'
-  }).then(() => {
-    // Aqui você pode enviar o formulário manualmente, se necessário
-    document.querySelector('form').submit();
-  });
-});
-
-</script>
-
-
+    </script>
 </body>
 </html>

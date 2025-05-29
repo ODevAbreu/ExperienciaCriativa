@@ -2,6 +2,7 @@ import os
 import bcrypt
 import pymysql
 import base64
+import decimal
 
 from mangum import Mangum
 from fastapi import FastAPI, Request, Form, Depends, Response, UploadFile, File , HTTPException , status 
@@ -29,7 +30,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 # Configuração de sessão (chave secreta para cookies de sessão)
-app.add_middleware(SessionMiddleware, secret_key="clinica", max_age=20)  #10 segundos
+app.add_middleware(SessionMiddleware, secret_key="clinica", max_age=100000)  #10 segundos
 
 # Configuração de arquivos estáticos
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -41,7 +42,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "1234",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -184,6 +185,9 @@ async def deletar_usuario(request: Request, usuario_id: int, db=Depends(get_db))
             cursor.execute("DELETE FROM Usuario WHERE ID = %s", (usuario_id,))
             db.commit()
         
+        # Limpar a sessão para encerrar o login
+        request.session.clear()
+
         request.session["icon"] = "success" 
         request.session["mensagem_header"] = "Sucesso!"
         request.session["mensagem"] = "Usuário deletado com sucesso."
@@ -407,42 +411,66 @@ async def prodincluir_exe(
     nome: str = Form(...),
     descr: str = Form(...),
     tipo: str = Form(...),
-    preco: str = Form(...),
-    qtd: str = Form(...),
-    imagem: UploadFile = File(None),  
-    db = Depends(get_db)
+    preco_numerico_form: str = Form(..., alias="preco_numerico"), 
+    qtd_form: str = Form(..., alias="qtd"), 
+    imagem: UploadFile = File(None),
+    db = Depends(get_db) 
 ):
     if not request.session.get("user_logged_in"):
         return RedirectResponse(url="/", status_code=303)
     
     try:
         imagem_bytes = None
-        if imagem:
+        if imagem and imagem.filename:
             imagem_bytes = await imagem.read()
         
+        try:
+            preco_final = decimal.Decimal(preco_numerico_form)
+            if not (decimal.Decimal('0.01') <= preco_final <= decimal.Decimal('99.99')):
+                raise ValueError("Preço fora do intervalo permitido (0.01 - 99.99)")
+        except (decimal.InvalidOperation, ValueError) as e:
+            request.session["icon"] = "error"
+            request.session["mensagem_header"] = "Erro de Validação"
+            request.session["mensagem"] = f"Valor do preço inválido: {preco_numerico_form}. Detalhe: {str(e)}"
+            raise 
+
+        try:
+            qtd_final = int(qtd_form)
+            if not (0 <= qtd_final <= 1000):
+                raise ValueError("Quantidade fora do intervalo permitido (0 - 1000)")
+        except ValueError as e:
+            request.session["icon"] = "error"
+            request.session["mensagem_header"] = "Erro de Validação"
+            request.session["mensagem"] = f"Valor da quantidade inválido: {qtd_form}. Detalhe: {str(e)}"
+            raise 
+
         with db.cursor() as cursor:
             sql = """
                 INSERT INTO Produto 
                 (Nome_Produto, Descr_Produto, Preco_prod, Tipo_prod, Qtn_Produto, Img_Produto) 
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (nome, descr, preco, tipo, qtd, imagem_bytes))
+            cursor.execute(sql, (nome, descr, preco_final, tipo, qtd_final, imagem_bytes))
             db.commit()
-            request.session["icon"] = "sucess"
-            request.session["mensagem_header"] = "Cadastro de Produto"
-            request.session["mensagem"] = f"Produto cadastrado com sucesso."
-            return RedirectResponse(url="/catalogo", status_code=303)
+            
+        request.session["icon"] = "success" 
+        request.session["mensagem_header"] = "Cadastro de Produto"
+        request.session["mensagem"] = f"Produto '{nome}' cadastrado com sucesso."
+        return RedirectResponse(url="/catalogo", status_code=303)
 
     except Exception as e:
+        request.session["icon"] = "error"
         request.session["mensagem_header"] = "Erro ao Cadastrar Produto"
-        request.session["mensagem"] = str(e)
-
+        request.session["mensagem"] = str(e) 
     finally:
-        db.close()
-    return templates.TemplateResponse("prodincluir_exe.html", {
+        if db: 
+            db.close()
+            
+    return templates.TemplateResponse("prodincluir_exe.html", { # Considere se este é o template correto para erro
         "request": request,
-        "mensagem_header": request.session.get("mensagem_header", ""),
-        "mensagem": request.session.get("mensagem", "")
+        "mensagem_header": request.session.get("mensagem_header", "Erro Inesperado"),
+        "mensagem": request.session.get("mensagem", "Ocorreu um erro durante o cadastro."),
+        "icon": request.session.get("icon", "error")
     })
 
 @app.get("/imagem_produto/{produto_id}")
@@ -576,15 +604,31 @@ async def prodexcluir_exe(request: Request, id: int, db = Depends(get_db)):
 async def prodatualizar(request: Request, id: int, db=Depends(get_db)):
     if not request.session.get("user_logged_in"):
         return RedirectResponse(url="/", status_code=303)
-    with db.cursor(pymysql.cursors.DictCursor) as cursor:
-        cursor.execute("SELECT * FROM Produto p WHERE p.ID_Produto = %s", (id,))
-        produto = cursor.fetchone()
-
-    db.close()
+    
+    produto = None
+    try:
+        with db.cursor(pymysql.cursors.DictCursor) as cursor: # Ajuste pymysql se usar outro driver
+            cursor.execute("SELECT * FROM Produto p WHERE p.ID_Produto = %s", (id,))
+            produto = cursor.fetchone()
+        if not produto:
+            request.session["icon"] = "error"
+            request.session["mensagem_header"] = "Erro"
+            request.session["mensagem"] = "Produto não encontrado."
+            return RedirectResponse(url="/catalogo", status_code=303)
+    except Exception as e:
+        request.session["icon"] = "error"
+        request.session["mensagem_header"] = "Erro ao buscar produto"
+        request.session["mensagem"] = str(e)
+    finally:
+        if db:
+            db.close()
 
     return templates.TemplateResponse("prodatualizar.html", {
         "request": request,
-        "p": produto,	
+        "p": produto,
+        "mensagem_header": request.session.pop("mensagem_header", ""),
+        "mensagem": request.session.pop("mensagem", ""),
+        "icon": request.session.pop("icon", "")
     })
 
 @app.post("/prodatualizar_exe")
@@ -594,45 +638,80 @@ async def prodatualizar_exe(
     nome: str = Form(...),
     descr: str = Form(...),
     tipo: str = Form(...),
-    preco: str = Form(...),
-    qtd: str = Form(...),
-    imagem: UploadFile = File(None),  
+    preco_numerico_form: str = Form(..., alias="preco_numerico"),
+    qtd_form: str = Form(..., alias="qtd"),
+    imagem: UploadFile = File(None),
     db=Depends(get_db)
 ):
     if not request.session.get("user_logged_in"):
         return RedirectResponse(url="/", status_code=303)
 
     try:
-        imagem_bytes = None
-        if imagem:
+        try:
+            preco_final = decimal.Decimal(preco_numerico_form)
+            if not (decimal.Decimal('0.01') <= preco_final <= decimal.Decimal('99.99')):
+                raise ValueError("Preço fora do intervalo permitido (0.01 - 99.99).")
+        except (decimal.InvalidOperation, ValueError) as e:
+            request.session["icon"] = "error"
+            request.session["mensagem_header"] = "Erro de Validação"
+            request.session["mensagem"] = f"Valor do preço inválido ('{preco_numerico_form}'). {str(e)}"
+            return RedirectResponse(url=f"/prodatualizar?id={id}", status_code=303)
+
+        try:
+            qtd_final = int(qtd_form)
+            if not (0 <= qtd_final <= 1000):
+                raise ValueError("Quantidade fora do intervalo permitido (0 - 1000).")
+        except ValueError as e:
+            request.session["icon"] = "error"
+            request.session["mensagem_header"] = "Erro de Validação"
+            request.session["mensagem"] = f"Valor da quantidade inválido ('{qtd_form}'). {str(e)}"
+            return RedirectResponse(url=f"/prodatualizar?id={id}", status_code=303)
+
+        sql_set_parts = [
+            "Nome_Produto = %s",
+            "Descr_Produto = %s",
+            "Preco_prod = %s",
+            "Tipo_prod = %s",
+            "Qtn_Produto = %s"
+        ]
+        params = [nome, descr, preco_final, tipo, qtd_final]
+
+        if imagem and imagem.filename:
             imagem_bytes = await imagem.read()
+            sql_set_parts.append("Img_Produto = %s")
+            params.append(imagem_bytes)
+        
+        params.append(id)
 
         with db.cursor() as cursor:
-            sql = """
+            sql = f"""
                 UPDATE Produto
-                SET Nome_Produto = %s,
-                    Descr_Produto = %s,
-                    Preco_prod = %s,
-                    Tipo_prod = %s,
-                    Qtn_Produto = %s,
-                    Img_Produto = %s
+                SET {', '.join(sql_set_parts)}
                 WHERE ID_Produto = %s
             """
-            cursor.execute(sql, (nome, descr, preco, tipo, qtd, imagem_bytes, id))
+            cursor.execute(sql, tuple(params))
             db.commit()
-            request.session["mensagem_header"] = "Alterar Produto"
-            request.session["mensagem"] = f"Produto alterado com sucesso."
-            return RedirectResponse(url="/catalogo", status_code=303)
+            
+        request.session["icon"] = "success"
+        request.session["mensagem_header"] = "Alterar Produto"
+        request.session["mensagem"] = f"Produto '{nome}' alterado com sucesso."
+        return RedirectResponse(url="/catalogo", status_code=303)
+
     except Exception as e:
+        request.session["icon"] = "error"
         request.session["mensagem_header"] = "Erro ao atualizar"
         request.session["mensagem"] = str(e)
+        return RedirectResponse(url=f"/prodatualizar?id={id}", status_code=303)
     finally:
-        db.close()
-
+        if db:
+            db.close()
+    
+    # Fallback, não deveria ser alcançado idealmente
     return templates.TemplateResponse("prodatualizar_exe.html", {
         "request": request,
-        "mensagem_header": request.session.get("mensagem_header", ""),
-        "mensagem": request.session.get("mensagem", ""),
+        "mensagem_header": request.session.get("mensagem_header", "Erro Inesperado"),
+        "mensagem": request.session.get("mensagem", "Ocorreu um erro durante a atualização."),
+        "icon": request.session.get("icon", "error")
     })
 
 @app.get("/carrinho")

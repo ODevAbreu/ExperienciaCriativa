@@ -1,62 +1,82 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-    <style>
-        .btn-custom {
-          background-color: #744321; /* Marrom café */
-          border-color: #744321;
-          color: #f5f5dc;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro - Coffee or Nothing</title>
 
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+  <!-- Inputmask -->
+  <script src="https://cdn.jsdelivr.net/npm/inputmask@5.0.8/dist/inputmask.min.js"></script>
+
+  <style>
+    .btn-custom {
+      background-color: #744321;
+      border-color: #744321;
+      color: #f5f5dc;
+    }
+
+    input[readonly] {
+      background-color: #e9ecef;
+    }
+  </style>
 </head>
+
 <body style="background-color: #63320d;"> 
 
-<section class="vh-100 d-flex justify-content-center align-items-center">
-  <div class="container">
-    <div class="row d-flex justify-content-center">
-      <div class="col-md-12 col-lg-9"> 
-        <div class="card p-4" style="border-radius: 1rem;">
-          <div class="card-body text-black">
+  <section class="vh-100 d-flex justify-content-center align-items-center">
+    <div class="container">
+      <div class="row d-flex justify-content-center">
+        <div class="col-md-12 col-lg-9"> 
+          <div class="card p-4" style="border-radius: 1rem;">
+            <div class="card-body text-black">
 
-            <form action="/cadastrar_endereco_exe" method="post">
-            <h2 class="mb-3 text-center">Endereço de Entrega</h2>
+              <form action="/cadastrar_endereco_exe" method="post" onsubmit="sessionStorage.setItem('enderecoCadastrado', 'true')">
+                <h2 class="mb-3 text-center">Endereço de Entrega</h2>
 
-            <label>CEP</label>
-            <input type="text" id="cep" name="cep" class="form-control mb-3" required onblur="buscarCep()">
+                <label>CEP</label>
+                <input type="text" id="cep" name="cep" class="form-control mb-3" required onblur="buscarCep()">
 
-            <label>Rua</label>
-            <input type="text" id="rua" name="rua" class="form-control mb-3" required>
+                <label>Rua</label>
+                <input type="text" id="rua" name="rua" class="form-control mb-3" required readonly>
 
-            <label>Número de entrega</label>
-            <input type="text" id="num" name="num" class="form-control mb-3" required>
+                <label>Número de entrega</label>
+                <input type="text" id="num" name="num" class="form-control mb-3" required>
 
-            <label>Bairro</label>
-            <input type="text" id="bairro" name="bairro" class="form-control mb-3" required>
+                <label>Bairro</label>
+                <input type="text" id="bairro" name="bairro" class="form-control mb-3" required readonly>
 
-            <label>Cidade</label>
-            <input type="text" id="cidade" name="cidade" class="form-control mb-3" required>
-            <button type="submit" class="btn btn-success w-100 mt-3" style="background-color: #4a3428; color: #f5f5dc;">
-              Cadastrar Endereço
-            </button>
-          </form>
-            
+                <label>Cidade</label>
+                <input type="text" id="cidade" name="cidade" class="form-control mb-3" required readonly>
+
+                <!-- Botões lado a lado -->
+                <div class="d-flex justify-content-between gap-2 mt-3">
+                  <button type="button" onclick="history.back()" class="btn btn-secondary w-50">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                  </button>
+                  <button type="submit" class="btn btn-success w-50" style="background-color: #4a3428; color: #f5f5dc;">
+                    Cadastrar Endereço
+                  </button>
+                </div>
+              </form>
+
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-      function buscarCep() {
-      let cep = document.getElementById("cep").value;
+  </section>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    function buscarCep() {
+      let cep = document.getElementById("cep").value.replace("-", "");
 
       if (cep.length !== 8) {
         Swal.fire({
@@ -90,8 +110,21 @@
           });
         });
     }
-</script>
 
+    window.onload = function () {
+      Inputmask("99999-999").mask(document.getElementById("cep"));
+
+      // Verifica se o endereço foi cadastrado com sucesso
+      if (sessionStorage.getItem("enderecoCadastrado") === "true") {
+        Swal.fire({
+          icon: 'success',
+          title: 'Sucesso!',
+          text: 'Endereço cadastrado com sucesso!'
+        });
+        sessionStorage.removeItem("enderecoCadastrado");
+      }
+    };
+  </script>
 
 </body>
 </html>
