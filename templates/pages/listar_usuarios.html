@@ -7,136 +7,154 @@
   <h1 style="
     font-family: 'Playfair Display', serif;
     font-size: 2.5rem;
-    color: #3E2723;
+    color: #000000;
     text-align: center;
     margin-bottom: 40px;
   ">
     {% if single_user_view %}
-      Perfil do Usuário
+    Perfil do Usuário
     {% else %}
-      Usuários Cadastrados
+    Usuários Cadastrados
     {% endif %}
   </h1>
-  <body style="background-color: #694940;"> 
 
-  <div class="table-responsive" style="border-radius: 12px; overflow: hidden; box-shadow: 0 0 15px rgba(0,0,0,0.1);">
-    <table class="table" style="background-color: #fff;">
-      <thead style="background-color: #502e24; color: #fff;">
-        <tr>
-          <th>ID</th>
-          <th>Nome</th>
-          <th>Email</th>
-          <th>Data de Nascimento</th>
-          <th>Telefone</th>
-          <th class="text-center">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for usuario in usuarios %}
-        <tr style="transition: background 0.3s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
-          <td>{{ usuario.Id }}</td>
-          <td>{{ usuario.Nome }}</td>
-          <td>{{ usuario.Email }}</td>
-          <td>{{ usuario.Dt_Nasc }}</td>
-          <td>{{ usuario.Telefone }}</td>
-          <td class="text-center">
-            <a href="/editar_usuario/{{ usuario.Id }}" class="btn btn-sm" style="background-color: #795548; color: #fff; margin-right: 6px;">
-              ✏️ Editar
-            </a> 
-            <a href="javascript:void(0);"
-               class="btn btn-sm"
-               style="background-color: #d32f2f; color: #fff;"
-               onclick="confirmDeleteUser('{{ url_for('deletar_usuario', usuario_id=usuario.Id) }}', '{{ usuario.Nome | e }}')">
-               🗑️ Deletar
-            </a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <body style="background-color: #694940;">
 
-  {# Seção para mostrar as compras (apenas na visualização individual) #}
-  {% if single_user_view and compras %}
-  <div style="margin-top: 40px;">
-    <h2 style="
-      font-family: 'Playfair Display', serif;
-      font-size: 2rem;
-      color: #3E2723;
-      text-align: center;
-      margin-bottom: 30px;
-    ">
-      Histórico de Compras
-    </h2>
-    
-    {% for compra in compras %}
-    <div style="margin-bottom: 30px; background-color: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-        <div>
-          <strong>Compra #{{ compra.ID_Compra }}</strong><br>
-          Data: {{ compra.Data_Compra }}<br>
-          Status: {{ compra.Status }}<br>
-          Forma de Pagamento: {{ compra.Forma_Pagamento }}
-        </div>
-        <div style="text-align: right;">
-          <strong>Endereço de entrega:</strong><br>
-          {{ compra.Rua_entrega }}, {{ compra.Numero_entrega }}<br>
-          {{ compra.Bairro_entrega }} - {{ compra.Cidade_entrega }}<br>
-          CEP: {{ compra.CEP_entrega }}
-        </div>
-      </div>
-      
-      <table class="table" style="width: 100%; margin-bottom: 15px;">
+    <div class="table-responsive" style="border-radius: 12px; overflow: hidden; box-shadow: 0 0 15px rgba(0,0,0,0.1);">
+      <table class="table" style="background-color: #fff;">
         <thead style="background-color: #502e24; color: #fff;">
           <tr>
-            <th>Produto</th>
-            <th>Quantidade</th>
-            <th>Preço Unitário</th>
-            <th>Subtotal</th>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Data de Nascimento</th>
+            <th>Telefone</th>
+            <th class="text-center">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {% for produto in compra.produtos %}
-          <tr>
-            <td>{{ produto.Nome_Produto }}</td>
-            <td>{{ produto.Qtn_Produto }}</td>
-            <td>R$ {{ "%.2f"|format(produto.Preco_prod) }}</td>
-            <td>R$ {{ "%.2f"|format(produto.Subtotal) }}</td>
+          {% for usuario in usuarios %}
+          <tr style="transition: background 0.3s;" onmouseover="this.style.background='#f5f5f5'"
+            onmouseout="this.style.background='white'">
+            <td>{{ usuario.Id }}</td>
+            <td>{{ usuario.Nome }}</td>
+            <td>{{ usuario.Email }}</td>
+            <td>{{ usuario.Dt_Nasc }}</td>
+            <td>{{ usuario.Telefone }}</td>
+            <td class="text-center">
+              <a href="/editar_usuario/{{ usuario.Id }}" class="btn btn-sm"
+                style="background-color: #795548; color: #fff; margin-right: 6px;">
+                ✏️ Editar
+              </a>
+              <a href="javascript:void(0);" class="btn btn-sm" style="background-color: #d32f2f; color: #fff;"
+                onclick="confirmDeleteUser('{{ url_for('deletar_usuario', usuario_id=usuario.Id) }}', '{{ usuario.Nome | e }}')">
+                🗑️ Deletar
+              </a>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
-        <tfoot>
-          <tr style="font-weight: bold; background-color: #f5f5f5;">
-            <td colspan="3" style="text-align: right;">Total:</td>
-            <td>R$ {{ "%.2f"|format(compra.total) }}</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
-    {% endfor %}
-  </div>
-  {% endif %}
+
+    {# Seção para mostrar as compras (apenas na visualização individual) #}
+    {% if single_user_view and compras %}
+    <div style="margin-top: 40px;">
+      <h2 style="
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: #000000;
+      text-align: center;
+      margin-bottom: 30px;
+    ">
+        Histórico de Compras
+      </h2>
+
+      {% for compra in compras %}
+      <div style="
+  margin-bottom: 40px; 
+  background-color: #fff; 
+  border-radius: 16px; 
+  padding: 24px; 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  border-left: 8px solid #6D4C41;
+">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+            <div style="font-size: 1.1rem; color: #4E342E;">
+              <strong>Compra #{{ compra.ID_Compra }}</strong><br>
+              <span>Data: {{ compra.Data_Compra.strftime("%d/%m/%Y") if compra.Data_Compra else "Data inválida"
+                }}</span><br>
+              <span>Status: <strong style="color: #a50427;">{{ compra.Status }}</strong></span><br>
+              <span>Pagamento: {{ compra.Forma_Pagamento }}</span>
+            </div>
+            <div style="text-align: right; font-size: 0.95rem; color: #5D4037;">
+              <strong>Endereço de entrega</strong><br>
+              {{ compra.Rua_entrega }}, {{ compra.Numero_entrega }}<br>
+              {{ compra.Bairro_entrega }} - {{ compra.Cidade_entrega }}<br>
+              CEP: {{ compra.CEP_entrega }}
+            </div>
+          </div>
+        </div>
+
+        <table class="table" style="width: 100%; border-radius: 8px; overflow: hidden;">
+          <thead style="background-color: #5D4037; color: #fff;">
+            <tr>
+              <th>Imagem</th>
+              <th>Produto</th>
+              <th>Quantidade</th>
+              <th>Preço Unitário</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for produto in compra.produtos %}
+            <tr style="vertical-align: middle;">
+              <td>
+                <img src="{{ url_for('get_imagem_produto', produto_id=produto.ID_Produto) }}"
+                  alt="{{ produto.Nome_Produto }}"
+                  style="max-width: 120px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+              </td>
+              <td style="font-weight: 500;">{{ produto.Nome_Produto }}</td>
+              <td>{{ produto.Qtn_Produto }}</td>
+              <td>R$ {{ "%.2f"|format(produto.Preco_prod) }}</td>
+              <td>R$ {{ "%.2f"|format(produto.Subtotal) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: bold; background-color: #efebe9;">
+              <td colspan="4" style="text-align: right;">Total da Compra:</td>
+              <td style="color: #4E342E;">R$ {{ "%.2f"|format(compra.total) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {% endfor %}
+
+    </div>
+    {% endif %}
 </div>
 
 {# Adicione a função customizada aqui ou em um arquivo JS global carregado no base.html #}
 {# Se a função já estiver em um arquivo .js global carregado pelo base.html, não precisa repetir aqui #}
 <script>
-function confirmDeleteUser(deleteUrl, userName) {
+  function confirmDeleteUser(deleteUrl, userName) {
     Swal.fire({
-        title: 'Tem certeza?',
-        html: `Você realmente deseja deletar o usuário "<b>${userName}</b>"?<br>Esta ação não poderá ser desfeita!`, // Usando html para negrito
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d32f2f',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sim, deletar!',
-        cancelButtonText: 'Cancelar'
+      title: 'Tem certeza?',
+      html: `Você realmente deseja deletar o usuário "<b>${userName}</b>"?<br>Esta ação não poderá ser desfeita!`, // Usando html para negrito
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d32f2f',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sim, deletar!',
+      cancelButtonText: 'Cancelar'
     }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = deleteUrl;
-        }
+      if (result.isConfirmed) {
+        window.location.href = deleteUrl;
+      }
     });
-}
+  }
 </script>
 
 {% endblock %}

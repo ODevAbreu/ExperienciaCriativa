@@ -42,7 +42,7 @@ templates = Jinja2Templates(directory="templates/pages")
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "",
+    "password": "PUC@1234",
     "database": "coffee"
 }
 
@@ -149,7 +149,8 @@ async def listar_usuarios(usuario_id: int, request: Request, db = Depends(get_db
             # Para cada compra, busca os produtos comprados
             for compra in compras:
                 cursor.execute("""
-                    SELECT 
+                    SELECT
+                        p.ID_Produto,
                         p.Nome_Produto,
                         p.Preco_prod,
                         qp.Qtn_Produto,
